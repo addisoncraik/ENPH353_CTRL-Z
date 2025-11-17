@@ -1,0 +1,25 @@
+# Catkin build directories
+build/
+devel/
+install/
+
+# Catkin tools specific files
+.catkin_tools/
+.catkin_workspace
+
+# Log files
+log/
+*.log
+
+# Python compiled files
+*.pyc
+__pycache__/
+
+# Editor/IDE specific files (examples)
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Other common ignored files
+*.DS_Store # macOS specific
