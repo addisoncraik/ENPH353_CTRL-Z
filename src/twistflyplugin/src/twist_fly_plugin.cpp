@@ -34,7 +34,7 @@ public:
     nh = std::make_unique<ros::NodeHandle>(robot_namespace_);
     // Not sure why I need the node handler to create the subscriber
     // Sets up a ros subcriber node so that the cmd_vel can be used
-    cmdVelSubscriber = nh->subscribe("/cmd_vel",1,  &TwistFlyPlugin::OnCmdVel, this);
+    cmdVelSubscriber = nh->subscribe("/cmd_vel", 1,  &TwistFlyPlugin::OnCmdVel, this);
     
     // Updates the plugin each time the world is updated.
     // bind 

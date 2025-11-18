@@ -1,0 +1,8 @@
+<launch>
+   <!-- My Package launch file -->
+   <node pkg="time_trials"
+         type="move.py"
+         name="BALLIN" 
+         output="screen">
+   </node>
+</launch>
