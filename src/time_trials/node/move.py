@@ -8,11 +8,18 @@ rospy.init_node('topic_publisher')
 cmd_vel = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
 score_tracker = rospy.Publisher('/score_tracker', String, queue_size=1)
 
+rospy.sleep(1.0)
+
 rate = rospy.Rate(0.1)
 move_start = Twist()
-move_start.linear.z = 0.5
+move_start.linear.z = 1
+move_start.linear.y = -0.5
+move_start.linear.x = 0.5
+
 
 move_end = Twist()
+move_end.linear.z = 0
+move_end.linear.y = 0
 move_end.linear.x = 0
 
 rate.sleep()
