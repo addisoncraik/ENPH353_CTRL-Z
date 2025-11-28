@@ -1,5 +1,7 @@
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>    
+#include <gazebo/physics/Link.hh>
+#include <gazebo/physics/Inertial.hh>
 #include <gazebo/common/common.hh>
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
@@ -11,7 +13,11 @@ namespace gazebo {
   std::unique_ptr<ros::NodeHandle> nh;
   ros::Subscriber cmdVelSubscriber;
   std::string robot_namespace_;
+  std::string robot_base_frame_;
+  gazebo::physics::LinkPtr base_link;
+
   
+  double mass;
   ignition::math::Vector3d linearCmd{0,0,0};
   ignition::math::Vector3d angularCmd{0,0,0};
   
@@ -22,12 +28,22 @@ public:
     // Checks for a namespace tag so that multiple robots can use this plugin
     robot_namespace_ = "";
     if (!_sdf->HasElement("robotNamespace")) {
-    ROS_INFO("GazeboRosSkidSteerDrive Plugin missing <robotNamespace>, defaults to \"%s\"",
+    ROS_INFO("TwistFlyPlugin missing <robotNamespace>, defaults to \"%s\"",
     this->robot_namespace_.c_str());
     } else {
     this->robot_namespace_ =
     _sdf->GetElement("robotNamespace")->Get<std::string>();
     }
+
+    this->robot_base_frame_ = "base_footprint";
+    if (!_sdf->HasElement("robotBaseFrame")) {
+      ROS_WARN("TwistFlyPlugin (ns = %s) missing <robotBaseFrame>, defaults to \"%s\"",
+          this->robot_namespace_.c_str(), this->robot_base_frame_.c_str());
+    } else {
+      this->robot_base_frame_ = _sdf->GetElement("robotBaseFrame")->Get<std::string>();
+    }
+    this->base_link = model->GetLink(this->robot_base_frame_);
+    this->mass = base_link->GetInertial()->Mass();
     
     // Initialze the node and subscribe to cmd_vel
     // The namespace is just set to ~
@@ -53,10 +69,16 @@ public:
   void OnUpdate() {
     // Uses world coordinates to move the drone around may not be applicable for competition
     auto rot = model->WorldPose().Rot();
-    ignition::math::Vector3d worldLinear = rot.RotateVector(linearCmd);
-    model->SetLinearVel(worldLinear);
-    model->SetAngularVel(angularCmd);
-    //TODO: Apply a force on the model to counteract gravity so that we can hover
+    ignition::math::Vector3d cmdWorld = rot.RotateVector(this->linearCmd);
+    ignition::math::Vector3d vWorld = model->WorldLinearVel();
+    ignition::math::Vector3d vErr = cmdWorld - vWorld;
+
+    double kP = 2.0;
+    // Compute force required
+
+    ignition::math::Vector3d force = kP * vErr * this->mass;
+    this->base_link->AddForce(force);
+    this->model->SetAngularVel(this->angularCmd);
   }
 };
 
