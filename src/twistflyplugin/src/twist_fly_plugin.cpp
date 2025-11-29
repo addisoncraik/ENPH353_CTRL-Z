@@ -15,9 +15,11 @@ namespace gazebo {
   std::string robot_namespace_;
   std::string robot_base_frame_;
   gazebo::physics::LinkPtr base_link;
+  common::Time lastTime;
 
   
   double mass;
+  ignition::math::Vector3d prevError{0,0,0};
   ignition::math::Vector3d linearCmd{0,0,0};
   ignition::math::Vector3d angularCmd{0,0,0};
   
@@ -44,6 +46,7 @@ public:
     }
     this->base_link = model->GetLink(this->robot_base_frame_);
     this->mass = base_link->GetInertial()->Mass();
+    this->lastTime = model->GetWorld()->SimTime();
     
     // Initialze the node and subscribe to cmd_vel
     // The namespace is just set to ~
@@ -72,12 +75,22 @@ public:
     ignition::math::Vector3d cmdWorld = rot.RotateVector(this->linearCmd);
     ignition::math::Vector3d vWorld = model->WorldLinearVel();
     ignition::math::Vector3d vErr = cmdWorld - vWorld;
+    
+    common::Time simTime = model->GetWorld()->SimTime();
+    double dt = (simTime - lastTime).Double();
+    this->lastTime = simTime;
+    if (dt <= 0) return;
 
-    double kP = 2.0;
+    double kP = 20;
+    double kD = 1;
     // Compute force required
 
-    ignition::math::Vector3d force = kP * vErr * this->mass;
+    ignition::math::Vector3d force = (kP * vErr - kD * (vErr - this->prevError)/dt);
+    ignition::math::Vector3d gravityForce(0, 0, this->mass * 9.81);
+    // force += gravityForce;
+    this->prevError = vErr;
     this->base_link->AddForce(force);
+    this->base_link->AddForce(gravityForce);
     this->model->SetAngularVel(this->angularCmd);
   }
 };

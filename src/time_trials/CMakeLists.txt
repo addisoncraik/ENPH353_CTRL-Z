@@ -9,7 +9,12 @@ project(time_trials)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  dynamic_reconfigure
+  std_msgs
   rospy
+)
+generate_dynamic_reconfigure_options(
+  cfg/CenteringPID.cfg
 )
 
 ## System dependencies are found with CMake's conventions
@@ -111,6 +116,7 @@ catkin_package(
 ###########
 ## Build ##
 ###########
+
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations

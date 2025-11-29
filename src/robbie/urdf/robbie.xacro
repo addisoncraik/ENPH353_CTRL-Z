@@ -14,7 +14,7 @@
   <xacro:property name="chassis_width" value="0.15"/>
   <xacro:property name="chassis_length" value="0.2"/>
   <xacro:property name="chassis_height" value="0.05"/>
-  <xacro:property name="chassis_mass" value="0.5"/>
+  <xacro:property name="chassis_mass" value="1000000"/>
   <xacro:property name="wheel_radius" value="0.04"/>
   <xacro:property name="wheel_width" value="0.03"/>
   <xacro:property name="wheel_mass" value="0.025"/>
@@ -217,9 +217,6 @@
       <broadcastTF>false</broadcastTF>
     </plugin>
   </gazebo> -->
-  <gazebo reference="chassis">
-    <gravity>0</gravity>
-  </gazebo>
 
   <gazebo reference="camera_link">
     <sensor type="camera" name="camera1">
@@ -260,6 +257,7 @@
       </plugin>
     </sensor>
   </gazebo>
+
   <gazebo>
       <plugin name="twistflyplugin" filename="libtwistflyplugin.so">
       <robotNamespace>${robot_name}</robotNamespace>
