@@ -1,0 +1,140 @@
+import rospy
+import numpy as np
+import math
+import cv2
+
+class BabyPID:
+    def __init__(self):
+        # PID gains
+        self.Kp = 0.1
+        self.Ki = 0.4
+        self.Kd = 0.04
+        self.imax = 25
+
+        # State variables
+        self.last_dx = 0.0
+        self.last_dy = 0.0
+        self.integral_dx = 0.0
+        self.integral_dy = 0.0
+        self.dx_filtered = 0.0
+        self.dy_filtered = 0.0
+        self.last_time = rospy.Time.now().to_sec()
+
+    def calculate_action(self, babyDrone, target, board, image):
+        cx, cy, angle = babyDrone
+        if target is None:
+            return [0.0, 0.0, 0.0]
+
+        tx, ty = target
+
+        # Time delta
+        now = rospy.Time.now().to_sec()
+        dt = now - self.last_time
+        self.last_time = now
+        if dt <= 0: dt = 1e-6
+
+        # Positional error
+        dx = tx - cx
+        dy = ty - cy
+
+        dx /= 100
+        dy /= 100
+
+        # Derivative
+        ddx = (dx - self.last_dx) / dt
+        ddy = (dy - self.last_dy) / dt
+        alpha = 0.5
+        self.dx_filtered = alpha * self.dx_filtered + (1-alpha) * ddx
+        self.dy_filtered = alpha * self.dy_filtered + (1-alpha) * ddy
+
+        # Integral with optional leak
+        leak = 1.0
+        self.integral_dx = leak * self.integral_dx + dx * dt
+        self.integral_dy = leak * self.integral_dy + dy * dt
+
+        # Clamp integrals
+        self.integral_dx = max(min(self.integral_dx, self.imax), -self.imax)
+        self.integral_dy = max(min(self.integral_dy, self.imax), -self.imax)
+
+        # Save last error
+        self.last_dx = dx
+        self.last_dy = dy
+
+        # PID output
+        vx = self.Kp * dx - self.Kd * self.dx_filtered + self.Ki * self.integral_dx
+        vy = self.Kp * dy - self.Kd * self.dy_filtered + self.Ki * self.integral_dy
+
+        # Optional clamp for max velocity
+        world_vx = max(min(vx, 20), -20)
+        world_vy = max(min(vy, 20), -20)
+
+        # Heading correction (same as before)
+        target_angle = math.atan2(dy, dx)
+        angle_error = target_angle - angle
+        angle_error = (angle_error + math.pi) % (2*math.pi) - math.pi
+        Ka = 0.5
+        world_rot = angle_error * Ka
+
+        drone_vx = world_vx * np.cos((angle - np.pi/2)) - world_vy * np.sin((angle - np.pi/2))
+        drone_vy = world_vx * np.sin((angle - np.pi/2)) + world_vy * np.cos((angle - np.pi/2))
+
+        self.visualizeCommand(image, babyDrone, (drone_vx, drone_vy), target, target_angle)
+        
+
+        return [drone_vx, drone_vy, world_rot]
+
+    def visualizeCommand(self, image, baby_pos, baby_cmd, target, target_angle):
+        drone_vx, drone_vy = baby_cmd
+        cx, cy, angle = baby_pos
+        tx, ty = target
+        image_with_vector = image.copy()
+        px1, py1 = to_px(cx, cy, image)
+        px2, py2 = to_px(tx, ty, image)
+
+        cv2.arrowedLine(
+            image_with_vector,
+            (px1, py1),
+            (px2, py2),
+            (0, 255, 0),
+            3,
+            cv2.LINE_AA
+        )
+        # --- Draw commanded motion vector (RED) ---
+
+        scale = 500  # increase length so it's visible
+        cmd_end_x = int(cx + drone_vx * scale)
+        cmd_end_y = int(cy + drone_vy * scale)
+
+        px_cmd1, py_cmd1 = to_px(cx, cy, image)
+        px_cmd2, py_cmd2 = to_px(cmd_end_x, cmd_end_y, image)
+
+        cv2.arrowedLine(
+            image_with_vector,
+            (px_cmd1, py_cmd1),
+            (px_cmd2, py_cmd2),
+            (0, 0, 255),   # red
+            3,
+            cv2.LINE_AA
+        )
+                # orientation vector (blue)
+        hx = int(cx + 50 * math.cos(angle))
+        hy = int(cy + 50 * math.sin(angle))
+        cv2.arrowedLine(image_with_vector, (cx, cy), (hx, hy), (255, 0, 0), 2)
+
+        # desired direction vector (green)
+        txv = int(cx + 50 * math.cos(target_angle))
+        tyv = int(cy + 50 * math.sin(target_angle))
+        cv2.arrowedLine(image_with_vector, (cx, cy), (txv, tyv), (0, 255, 0), 2)
+
+        cv2.putText(image_with_vector, "cmd",
+                    (px_cmd2 + 5, py_cmd2 + 5),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5, (0, 0, 255), 2)
+
+        # Display live with OpenCV (non-blocking)
+        cv2.imshow("Baby Controller", image_with_vector)
+        cv2.waitKey(1)
+
+def to_px(x, y, image):
+    h, w = image.shape[:2]
+    return int(np.clip(x, 0, w-1)), int(np.clip(y, 0, h-1))
