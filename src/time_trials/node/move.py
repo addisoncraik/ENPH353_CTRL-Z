@@ -44,7 +44,7 @@ class Mover:
         self.bridge = CvBridge()
         self.move = Twist()
         self.move_baby = Twist()
-        self.boards = [[(1000,450), [(1010, 450), (990, 450)]]]
+        self.boards = [[(500,250), [(490, 250), (510, 250)]]]
         self.last_dx = 0
         self.last_dy = 0
         self.last_dz = 0
@@ -57,6 +57,7 @@ class Mover:
 
         self.is_master_stable = False
         self.number_stable_frames = 0
+        self.first_time_stable = True
         self.last_time = rospy.Time.now().to_sec()
         rospy.sleep(1.0)
         # self.srv = Server(CenteringPIDConfig, self.cfg_callback)
@@ -73,17 +74,19 @@ class Mover:
 
         if self.is_master_stable == True:
           map = isolate_map(cv_image, int(consts.MAP_WIDTH/consts.SCALE_FACTOR), int(consts.MAP_HEIGHT/consts.SCALE_FACTOR))
+          if self.first_time_stable == True:
+            self.first_time_stable = False
+            self.boards = find_clue_boards(map)
           rgb_map = cv2.cvtColor(map, cv2.COLOR_BGR2RGB)
           cv2.imshow("map", rgb_map)
           babyDrone = find_babyDrone(map, self.prev_baby_location)
           board, target = find_target(babyDrone, self.boards)
-          baby_vx, baby_vy, baby_angularz = self.calculate_action(babyDrone, target, board, map)
-          self.move_baby.linear.x = -baby_vy
-          self.move_baby.linear.y = -baby_vx 
+          baby_vx, baby_vy, baby_angularz = self.baby.calculate_action(babyDrone, target, board, map)
+          self.move_baby.linear.x = baby_vx
+          self.move_baby.linear.y = baby_vy 
           self.move_baby.angular.z = baby_angularz
           self.move_baby.linear.z = 0
           self.baby_pub.publish(self.move_baby)
-
           self.prev_baby_location = babyDrone
         else:
           self.move_baby.linear.x = 0
@@ -114,7 +117,7 @@ class Mover:
         try:
           max_contour = max(contours, key=cv2.contourArea)
         except:
-          return (0, 0, 0)
+          return self.prev_baby_location
 
         M = cv2.moments(max_contour)
 
@@ -135,12 +138,12 @@ class Mover:
         try:
           max_contour = max(contours, key=cv2.contourArea)
         except:
-          return (0, 0, 0)
+          return self.prev_baby_location
 
         M = cv2.moments(max_contour)
 
         if M['m00'] == 0:
-
+          return self.prev_baby_location
         hx = int(M['m10'] / M['m00'])
         hy = int(M['m01'] / M['m00'])
         if DEBUG:
@@ -152,7 +155,7 @@ class Mover:
 
           cv2.imshow("baby_find", debug)
 
-        angle = math.atan2(cy - hy, hx - cx)
+        angle = math.atan2(hy - cy, hx - cx)
         self.prev_baby_location = (cx, cy, angle)
         if DEBUG:
           print(cx,cy,angle*180/math.pi)
@@ -231,17 +234,16 @@ class Mover:
         vx = self.Kp * dx - self.Kd * self.dx_filtered + self.Ki * self.integral_dx
         vy = self.Kp * dy - self.Kd * self.dy_filtered + self.Ki * self.integral_dy
 
-        # Optional clamp
         vx = max(min(vx, 20), -20)
         vy = max(min(vy, 20), -20)
 
-        rospy.loginfo(
-        f"[Centering] dx={dx:.2f}, dy={dy:.2f}, dz={dz:.2f} | "
-        f"vx={vx:.3f}, vy={vy:.3f} | "
-        f"ddx={self.dx_filtered:.3f}, ddy={self.dy_filtered:.3f} | dt={dt:.4f}"
-        f"intx={self.integral_dx:.3f}, inty={self.integral_dy:.3f}"
-        )
-        # msg = Vector3()
+        # rospy.loginfo(
+        # f"[Centering] dx={dx:.2f}, dy={dy:.2f}, dz={dz:.2f} | "
+        # f"vx={vx:.3f}, vy={vy:.3f} | "
+        # f"ddx={self.dx_filtered:.3f}, ddy={self.dy_filtered:.3f} | dt={dt:.4f}"
+        # f"intx={self.integral_dx:.3f}, inty={self.integral_dy:.3f}"
+        # )
+        # # msg = Vector3()
         # msg.x = dx
         # msg.y = dy
         # msg.z = ddx 

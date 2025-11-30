@@ -6,9 +6,9 @@ import cv2
 class BabyPID:
     def __init__(self):
         # PID gains
-        self.Kp = 0.1
-        self.Ki = 0.0
-        self.Kd =  0.0
+        self.Kp = 0.5
+        self.Kd = 0.001
+        self.Ki = 0.001
         self.imax = 25
 
         # State variables
@@ -24,8 +24,6 @@ class BabyPID:
         cx, cy, angle = babyDrone
         if target is None:
             return [0.0, 0.0, 0.0]
-
-
         tx, ty = target
 
         # Time delta
@@ -71,21 +69,25 @@ class BabyPID:
 
         # Heading correction (same as before)
         target_angle = math.atan2(dy, dx)
-        angle_error = target_angle - angle
+        angle_error = angle - target_angle
         angle_error = (angle_error + math.pi) % (2*math.pi) - math.pi
-        Ka = 0.5
+        Ka = 0.8
         world_rot = angle_error * Ka
 
-        drone_vx = (world_vx * np.cos(-(angle)) - world_vy * np.sin(-(angle)))
-        drone_vy = -(world_vx * np.sin(-(angle)) + world_vy * np.cos(-(angle)))
+        drone_vx = world_vx * np.cos(angle) + world_vy * np.sin(angle)
+        drone_vy = world_vx * np.sin(angle) - world_vy * np.cos(angle)
+
+
 
         self.visualizeCommand(image, babyDrone, (drone_vx, drone_vy), target, target_angle)
         
-
         return [drone_vx, drone_vy, world_rot]
 
     def visualizeCommand(self, image, baby_pos, baby_cmd, target, target_angle):
         drone_vx, drone_vy = baby_cmd
+        temp = drone_vx
+        drone_vx = -drone_vy
+        drone_vy = -temp
         cx, cy, angle = baby_pos
         tx, ty = target
         image_with_vector = image.copy()

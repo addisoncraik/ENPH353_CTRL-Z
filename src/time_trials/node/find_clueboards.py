@@ -44,7 +44,7 @@ def find_clue_boards(img):
 
   print(f"Found {len(contours)} raw contours. Removing Noise and Filtering by shape...")
 
-
+  cv2.imshow("Clueboards Found", mask)
   all_boards = [] # This will store the (x,y) of all circles from detected boards
 
   # Loop over every contour found
