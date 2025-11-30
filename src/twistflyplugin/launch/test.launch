@@ -1,0 +1,11 @@
+<launch>
+   <!-- Launch The Master -->
+	<group ns="Master">
+		<param name="tf_prefix" value="Master_tf" />
+		<include file="$(find robbie)/launch/robbie.launch">
+			<arg name="init_pose" value="-x 5.5 -y 3 -z 15 -R 0.0 -P 0.0 -Y -1.57" />
+			<arg name="robot_name"  value="Master" />
+                  <arg name="camera_orientation" value="0 1.5708 0"/>
+		</include>
+	</group>
+</launch>

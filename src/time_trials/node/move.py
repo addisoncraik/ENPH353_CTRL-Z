@@ -27,9 +27,9 @@ DEBUG = True
 
 class Mover:
     def __init__(self):
-        self.Kp = 0.01
-        self.Kd = 0.001
-        self.Ki = 0.10
+        self.Kp = 1.5
+        self.Kd = 0.3
+        self.Ki = 0.2
         self.imax = 10
         self.baby = BabyPID()
         rospy.Subscriber('/Master/rrbot/camera1/image_raw', Image, self.callback)
@@ -43,6 +43,7 @@ class Mover:
         self.boards = [[(1000,450), [(1010, 450), (990, 450)]]]
         self.last_dx = 0
         self.last_dy = 0
+        self.last_dz = 0
         self.integral_dx = 0
         self.integral_dy = 0
         self.dy_filtered = 0
@@ -55,7 +56,7 @@ class Mover:
         self.last_time = rospy.Time.now().to_sec()
 
         rospy.sleep(1.0)
-        self.srv = Server(CenteringPIDConfig, self.cfg_callback)
+        # self.srv = Server(CenteringPIDConfig, self.cfg_callback)
 
 
 
@@ -84,12 +85,12 @@ class Mover:
           self.move_baby.angular.z = 0
           self.baby_pub.publish(self.move_baby)
 
-    def cfg_callback(self, config, level):
-        self.Kp = config.Kp
-        self.Kd = config.Kd
-        self.Ki = config.Ki
-        self.imax = config.imax
-        return config
+    # def cfg_callback(self, config, level):
+    #     self.Kp = config.Kp
+    #     self.Kd = config.Kd
+    #     self.Ki = config.Ki
+    #     self.imax = config.imax
+    #     return config
 
     def find_babyDrone(self, map):
 
@@ -133,21 +134,19 @@ class Mover:
         M = cv2.moments(max_contour)
 
         if M['m00'] == 0:
-          return self.prev_baby_location
 
         hx = int(M['m10'] / M['m00'])
         hy = int(M['m01'] / M['m00'])
-        
-
-
         if DEBUG:
+
           debug = map.copy()
           cv2.circle(debug, (cx, cy), 3, (0, 0, 255), -1)
           cv2.circle(debug, (hx, hy), 3, (255, 0, 0), -1)
 
+
           cv2.imshow("baby_find", debug)
 
-        angle = math.atan2(cy - hy, cx - hx)
+        angle = math.atan2(cy - hy, hx - cx)
         self.prev_baby_location = (cx, cy, angle)
         if DEBUG:
           print(cx,cy,angle*180/math.pi)
@@ -198,12 +197,14 @@ class Mover:
         # Compute derivatives
         ddx = (dx - self.last_dx) / dt
         ddy = (dy - self.last_dy) / dt
+        ddz = (dz - self.last_dz) / dt
         alpha = 0.5
         self.dx_filtered = alpha * self.dx_filtered + (1-alpha) * ddx
         self.dy_filtered = alpha * self.dy_filtered + (1-alpha) * ddy
 
         self.dx_filtered = max(min(self.dx_filtered, self.imax), -self.imax)
         self.dy_filtered = max(min(self.dx_filtered, self.imax), -self.imax)
+        ddz = max(min(ddz, self.imax), -self.imax)
 
         # # Compute Integrals
         # self.integral_dx += (dx + self.last_dx) * dt
@@ -219,6 +220,7 @@ class Mover:
 
         self.last_dx = dx
         self.last_dy = dy
+        self.last_dz = dz
 
         vx = self.Kp * dx - self.Kd * self.dx_filtered + self.Ki * self.integral_dx
         vy = self.Kp * dy - self.Kd * self.dy_filtered + self.Ki * self.integral_dy
@@ -240,7 +242,7 @@ class Mover:
         # self.debug_pub.publish(msg)
         self.move.linear.x = -vy
         self.move.linear.y = -vx
-        self.move.linear.z = dz * 10
+        self.move.linear.z = dz
         self.pub.publish(self.move)
         rgb_img = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
 

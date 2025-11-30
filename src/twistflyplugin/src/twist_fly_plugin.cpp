@@ -5,6 +5,24 @@
 #include <gazebo/common/common.hh>
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
+#include <dynamic_reconfigure/server.h>
+#include <twistflyplugin/TwistPIDConfig.h>
+
+
+template<typename T> inline T clamp(const T& v, const T& lo, const T& hi) {
+    return (v < lo ? lo : (v > hi ? hi : v));
+}
+
+inline ignition::math::Vector3d clampVec(
+    const ignition::math::Vector3d &v,
+    double lo, double hi) {
+    return ignition::math::Vector3d(
+        clamp(v.X(), lo, hi),
+        clamp(v.Y(), lo, hi),
+        clamp(v.Z(), lo, hi)
+    );
+}
+
 
 namespace gazebo {
   class TwistFlyPlugin : public ModelPlugin {
@@ -15,13 +33,20 @@ namespace gazebo {
   std::string robot_namespace_;
   std::string robot_base_frame_;
   gazebo::physics::LinkPtr base_link;
-  common::Time lastTime;
-
   
+  // PID Controller Internal Variables
   double mass;
+  double Kp = 0.01, Kd = 0.0001, Ki = 100.0, clamp = 1.0;
+  common::Time lastTime;
+  ignition::math::Vector3d integral_error{0,0,0};
   ignition::math::Vector3d prevError{0,0,0};
+  ignition::math::Vector3d prevDError{0,0,0};
   ignition::math::Vector3d linearCmd{0,0,0};
   ignition::math::Vector3d angularCmd{0,0,0};
+
+  // Real time tuning tools
+  std::unique_ptr<dynamic_reconfigure::Server<twistflyplugin::TwistPIDConfig>> server;
+  dynamic_reconfigure::Server<twistflyplugin::TwistPIDConfig>::CallbackType f;
   
 public: 
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
@@ -49,10 +74,17 @@ public:
     this->lastTime = model->GetWorld()->SimTime();
     
     // Initialze the node and subscribe to cmd_vel
-    // The namespace is just set to ~
+    // The namespace is just set to
     nh = std::make_unique<ros::NodeHandle>(robot_namespace_);
     // Not sure why I need the node handler to create the subscriber
-    // Sets up a ros subcriber node so that the cmd_vel can be used
+    // server = std::make_unique<dynamic_reconfigure::Server<twistflyplugin::TwistPIDConfig>>(*nh);
+
+    // // Bind the callback
+    // dynamic_reconfigure::Server<twistflyplugin::TwistPIDConfig>::CallbackType f =
+    //     boost::bind(&TwistFlyPlugin::cfgCallback, this, _1, _2);
+
+    // server->setCallback(f);
+    // // Sets up a ros subcriber node so that the cmd_vel can be used
     cmdVelSubscriber = nh->subscribe("/" + robot_namespace_ + "/cmd_vel", 1,  &TwistFlyPlugin::OnCmdVel, this);
     
     // Updates the plugin each time the world is updated.
@@ -70,28 +102,57 @@ public:
   }
 
   void OnUpdate() {
-    // Uses world coordinates to move the drone around may not be applicable for competition
     auto rot = model->WorldPose().Rot();
     ignition::math::Vector3d cmdWorld = rot.RotateVector(this->linearCmd);
     ignition::math::Vector3d vWorld = model->WorldLinearVel();
-    ignition::math::Vector3d vErr = cmdWorld - vWorld;
-    
+
+    // -------- PID CONTROLLER -----------
+    // Find error function - difference between target velocity and actual velocity
+    ignition::math::Vector3d vErr = (cmdWorld - vWorld) * 100;
+
+    // Time calculations for integral and derivative
     common::Time simTime = model->GetWorld()->SimTime();
     double dt = (simTime - lastTime).Double();
     this->lastTime = simTime;
     if (dt <= 0) return;
 
-    double kP = 20;
-    double kD = 1;
-    // Compute force required
+    // Error function derivative + a low pass filter
+    double alpha = 0.8;
+    ignition::math::Vector3d dvErr = (vErr - this->prevError) / dt;
+    dvErr = this->prevDError * alpha + (1 - alpha) * dvErr;
 
-    ignition::math::Vector3d force = (kP * vErr - kD * (vErr - this->prevError)/dt);
-    ignition::math::Vector3d gravityForce(0, 0, this->mass * 9.81);
-    // force += gravityForce;
+    // Error function integral (with a leak)
+    double leak = 1;
+    this->integral_error = leak * this->integral_error + vErr * dt;
+
+    // Clamp derivative and integral error function
+    dvErr = clampVec(dvErr, -this->clamp, this->clamp);
+    this->integral_error = clampVec(this->integral_error, -this->clamp, this->clamp);
+
+    // Find the resulting force. Scale it by the mass of the object
+    ignition::math::Vector3d force = (Kp * vErr + Ki * integral_error - Kd * dvErr) * mass;
+
+    // Update previous error and its derivative
     this->prevError = vErr;
+    this->prevDError = dvErr;
+
+    // Apply the force and the anglular velocity
     this->base_link->AddForce(force);
-    this->base_link->AddForce(gravityForce);
     this->model->SetAngularVel(this->angularCmd);
+    ROS_INFO_STREAM_THROTTLE(1,
+      "Force: " << force <<
+      ", WorldVel: " << model->WorldLinearVel() <<
+      ", commandVel: " << linearCmd <<
+      ", Mass*g: " << mass*9.81
+    );
+  }
+
+  void cfgCallback(twistflyplugin::TwistPIDConfig &config, uint32_t level){
+    this->Kp = config.Kp;
+    this->Kd = config.Kd;
+    this->Ki = config.Ki;
+    this->clamp = config.clamp;
+    ROS_INFO("Reconfigure Request: kP = %f, kD = %f, kI = %f, clamp = %f", Kp, Kd, Ki, clamp);
   }
 };
 

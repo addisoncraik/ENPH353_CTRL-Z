@@ -10,8 +10,14 @@ project(twistflyplugin)
 find_package(catkin REQUIRED COMPONENTS
     gazebo_ros
     geometry_msgs
+    dynamic_reconfigure
+    std_msgs
     roscpp
 )
+
+# generate_dynamic_reconfigure_options(
+#   cfg/TwistPIDConfig.cfg
+# )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -87,11 +93,11 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * uncomment the "generate_dynamic_reconfigure_options" section below
 ##     and list every .cfg file to be processed
 
-## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+# Generate dynamic reconfigure parameters in the 'cfg' folder
+generate_dynamic_reconfigure_options(
+  cfg/TwistPID.cfg
+)
+
 
 ###################################
 ## catkin specific configuration ##
@@ -120,6 +126,8 @@ target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${GAZEBO_LIBRARIES}
 )
+add_dependencies(twistflyplugin twistflyplugin_gencfg)
+
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/twistflyplugin.cpp

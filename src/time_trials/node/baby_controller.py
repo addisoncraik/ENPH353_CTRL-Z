@@ -7,8 +7,8 @@ class BabyPID:
     def __init__(self):
         # PID gains
         self.Kp = 0.1
-        self.Ki = 0.4
-        self.Kd = 0.04
+        self.Ki = 0.0
+        self.Kd =  0.0
         self.imax = 25
 
         # State variables
@@ -24,6 +24,7 @@ class BabyPID:
         cx, cy, angle = babyDrone
         if target is None:
             return [0.0, 0.0, 0.0]
+
 
         tx, ty = target
 
@@ -75,8 +76,8 @@ class BabyPID:
         Ka = 0.5
         world_rot = angle_error * Ka
 
-        drone_vx = world_vx * np.cos((angle - np.pi/2)) - world_vy * np.sin((angle - np.pi/2))
-        drone_vy = world_vx * np.sin((angle - np.pi/2)) + world_vy * np.cos((angle - np.pi/2))
+        drone_vx = (world_vx * np.cos(-(angle)) - world_vy * np.sin(-(angle)))
+        drone_vy = -(world_vx * np.sin(-(angle)) + world_vy * np.cos(-(angle)))
 
         self.visualizeCommand(image, babyDrone, (drone_vx, drone_vy), target, target_angle)
         
