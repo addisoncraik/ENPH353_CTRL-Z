@@ -3,27 +3,31 @@
 import rospy
 from geometry_msgs.msg import Twist, Vector3
 from std_msgs.msg import String
-from find_center import find_course_center
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
-import find_center
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import math
-from baby_controller import BabyPID
 
 
 from dynamic_reconfigure.server import Server
 from time_trials.cfg import CenteringPIDConfig
 
-MAP_WIDTH = 2000
-MAP_HEIGHT = 900
-SCALE_FACTOR = 2
+from isolate_map import isolate_map
+from find_center import find_course_center
+from find_clueboards import find_clue_boards
 
-DRONE_COLOR = np.array([17, 225, 255])
-HEAD_COLOR = np.array([255, 255, 0])
-DEBUG = True
+from find_babyDrone import find_babyDrone
+from targeting import is_at_target
+from targeting import find_target
+
+from baby_controller import BabyPID
+
+from read_boards.process_image import process_image
+
+import constants as consts
 
 class Mover:
     def __init__(self):
@@ -54,7 +58,6 @@ class Mover:
         self.is_master_stable = False
         self.number_stable_frames = 0
         self.last_time = rospy.Time.now().to_sec()
-
         rospy.sleep(1.0)
         # self.srv = Server(CenteringPIDConfig, self.cfg_callback)
 
@@ -67,18 +70,21 @@ class Mover:
             rospy.logerr(e)
             return
         self.stabilize_master(cv_image)
+
         if self.is_master_stable == True:
-          map = isolate_map(cv_image, int(MAP_WIDTH/SCALE_FACTOR), int(MAP_HEIGHT/SCALE_FACTOR))
+          map = isolate_map(cv_image, int(consts.MAP_WIDTH/consts.SCALE_FACTOR), int(consts.MAP_HEIGHT/consts.SCALE_FACTOR))
           rgb_map = cv2.cvtColor(map, cv2.COLOR_BGR2RGB)
           cv2.imshow("map", rgb_map)
-          baby_x, baby_y, baby_theta = self.find_babyDrone(map)
-          board, target = self.find_target((baby_x, baby_y, baby_theta), map)
-          baby_vx, baby_vy, baby_angularz = self.baby.calculate_action((baby_x, baby_y, baby_theta), target, board, map)
+          babyDrone = find_babyDrone(map, self.prev_baby_location)
+          board, target = find_target(babyDrone, self.boards)
+          baby_vx, baby_vy, baby_angularz = self.calculate_action(babyDrone, target, board, map)
           self.move_baby.linear.x = -baby_vy
           self.move_baby.linear.y = -baby_vx 
           self.move_baby.angular.z = baby_angularz
           self.move_baby.linear.z = 0
           self.baby_pub.publish(self.move_baby)
+
+          self.prev_baby_location = babyDrone
         else:
           self.move_baby.linear.x = 0
           self.move_baby.linear.y = 0
@@ -276,114 +282,6 @@ class Mover:
       self.number_stable_frames += 1
       if self.number_stable_frames > 100:
         self.is_master_stable = True
-
-
-    def find_target(self, babyDrone, camera_feed):
-        cx, cy, _ = babyDrone
-
-        if self.boards == []:
-          return None, None
-
-        cx *= SCALE_FACTOR
-        cy *= SCALE_FACTOR
-
-        distances = []
-
-        for board in self.boards:
-            bx, by = board[0]
-
-            distances.append(math.sqrt((cx - bx) ** 2 + (cy - by) ** 2))
-
-        closest_board = self.boards[distances.index(min(distances))]
-
-
-        distances = []
-        targets = closest_board[1]
-        closest_board_index = self.boards.index(closest_board)
-
-
-        for target in targets:
-            tx, ty = target
-
-            distance = math.sqrt((cx - tx) ** 2 + (cy - ty) ** 2)
-
-            if distance < 20/SCALE_FACTOR:
-              self.boards[closest_board_index][1].remove(target)
-
-            distances.append(distance)
-
-        if len(targets) == 0:
-          self.boards.remove(closest_board)
-          return self.find_target(babyDrone, camera_feed)
-
-        closest_target_index = distances.index(min(distances))
-
-        if closest_target_index >= len(targets):
-          closest_target_index = 0
-
-        closest_target = targets[closest_target_index]
-
-
-        return (closest_board[0][0]/SCALE_FACTOR, closest_board[0][1]/SCALE_FACTOR), (closest_target[0]/SCALE_FACTOR, closest_target[1]/SCALE_FACTOR)
-
-
-def isolate_map(camera_feed, map_width, map_height):
-
-    camera_feed_hsv = cv2.cvtColor(camera_feed, cv2.COLOR_BGR2HSV)
-
-    target_color = np.array([0, 0, 180])
-    tolerance = np.array([300, 0, 10])
-
-    lower_bound = np.clip(target_color - tolerance, [0, 0, 0], [179, 255, 255])
-    upper_bound = np.clip(target_color + tolerance, [0, 0, 0], [179, 255, 255])
-
-
-    msk = cv2.inRange(camera_feed_hsv, lower_bound, upper_bound)
-
-    # invert mask
-    msk_inv = cv2.bitwise_not(msk)
-
-    contours, _ = cv2.findContours(msk_inv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    max_contour = max(contours, key=cv2.contourArea)
-
-    polygon_approximation = cv2.approxPolyDP(max_contour, 0.01 * cv2.arcLength(max_contour, True), True)
-    pts = polygon_approximation.reshape(-1, 2)
-    # pts = np.array(polygon_approximation).squeeze()
-    src = np.zeros((4, 2), dtype="float32")
-    center_point = np.zeros((2), dtype="float32")
-
-    for pt in pts:
-      center_point[0] += pt[0]
-      center_point[1] += pt[1]
-
-    center_point /= 4
-
-    angles = []
-
-    for pt in pts:
-      angle = np.arctan2(pt[1]-center_point[1], pt[0]-center_point[0])
-
-      if angle > 0 and angle < math.pi/2:
-        src[2] = pt #bottom right
-      elif angle > math.pi/2:
-        src[3] = pt #bottom left
-      elif angle > -math.pi/2 and angle < 0:
-        src[1] = pt #top right
-      else:
-        src[0] = pt #top left
-
-    dest = np.array([
-        [0, 0],
-        [map_width, 0],
-        [map_width, map_height],
-        [0, map_height]
-    ], dtype=np.float32)
-
-    # make transformation matrix
-    M = cv2.getPerspectiveTransform(src, dest)
-    return cv2.warpPerspective(camera_feed, M, (map_width, map_height))
-
 
 def main():
     rospy.init_node('robot_controller')
