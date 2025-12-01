@@ -47,7 +47,9 @@ class Mover:
         self.bridge = CvBridge()
         self.move = Twist()
         self.move_baby = Twist()
-        self.boards = [[(500,250), [(490, 250), (510, 250)]]]
+        self.boards = [
+            [(500,250), [(490, 250), (510, 250)]]
+            ]
         self.last_dx = 0
         self.last_dy = 0
         self.last_dz = 0
@@ -61,6 +63,7 @@ class Mover:
 
         self.is_master_stable = False
         self.number_stable_frames = 0
+        self.stable_baby_frames = 0
         self.first_time_stable = True
         self.last_time = rospy.Time.now().to_sec()
         rospy.sleep(1.0)
@@ -75,21 +78,21 @@ class Mover:
        else:
           self.height = -1
 
-    def para_correct(self, pos):
-       x,y,angle = pos
+    # def para_correct(self, pos):
+    #    x,y,angle = pos
 
-       cx = (consts.MAP_WIDTH/consts.SCALE_FACTOR)/2
-       cy = (consts.MAP_HEIGHT/consts.SCALE_FACTOR)/2
+    #    cx = (consts.MAP_WIDTH/consts.SCALE_FACTOR)/2
+    #    cy = (consts.MAP_HEIGHT/consts.SCALE_FACTOR)/2
 
-       x_c = x - cx
-       y_c = y - cy
+    #    x_c = x - cx
+    #    y_c = y - cy
 
-    #    if self.height == -1 or self.baby.height == -1:
-    #       k = 1
-    #    else:
-       k = 0.97
+    # #    if self.height == -1 or self.baby.height == -1:
+    # #       k = 1
+    # #    else:
+    #    k = 0.97
 
-       return x_c*k + cx, y_c*k + cy, angle
+    #    return x_c*k + cx, y_c*k + cy, angle
 
           
     def img_callback(self, data):
@@ -99,7 +102,7 @@ class Mover:
             rospy.logerr(e)
             return
         self.stabilize_master(cv_image)
-
+        
         if self.is_master_stable == True:
           map = isolate_map(cv_image, int(consts.MAP_WIDTH/consts.SCALE_FACTOR), int(consts.MAP_HEIGHT/consts.SCALE_FACTOR))
           if self.first_time_stable == True:
@@ -107,13 +110,16 @@ class Mover:
             self.boards = find_clue_boards(cv_image)
           rgb_map = cv2.cvtColor(map, cv2.COLOR_BGR2RGB)
           cv2.imshow("map", rgb_map)
-          babyDrone = self.para_correct(find_babyDrone(map, self.prev_baby_location))
+          babyDrone = find_babyDrone(map, self.prev_baby_location)
           board, target = find_target(babyDrone, self.boards)
-          baby_vx, baby_vy, baby_angularz = self.baby.calculate_action(babyDrone, target, board, map)
+          baby_vx, baby_vy, baby_angularz, baby_vz = self.baby.calculate_action(babyDrone, target, board, map)
+
+          self.deleteTarget(board, target)
+
           self.move_baby.linear.x = baby_vx
           self.move_baby.linear.y = baby_vy 
           self.move_baby.angular.z = baby_angularz
-          self.move_baby.linear.z = 0
+          self.move_baby.linear.z = baby_vz
           self.baby_pub.publish(self.move_baby)
           self.prev_baby_location = babyDrone
         else:
@@ -211,7 +217,7 @@ class Mover:
             (ex, ey),
             (0, 255, 0),
             3,
-            cv2.LINE_AAl
+            cv2.LINE_AA
         )
 
         # Display live with OpenCV (non-blocking)
@@ -226,6 +232,26 @@ class Mover:
       self.number_stable_frames += 1
       if self.number_stable_frames > 100:
         self.is_master_stable = True
+    
+    def deleteTarget(self, board, target):
+        if self.baby.at_target is False or self.baby.last_dz != consts.TARGET_HEIGHT:
+            return
+        self.stable_baby_frames += 1
+        if self.stable_baby_frames < 100:
+            return
+        self.stable_baby_frames = 0
+        print("baby has stabilized")
+        for element in self.boards[:]:
+            if element[0] == board:
+                if target in element[1]:
+                    element[1].remove(target)
+                    print("target removed")
+
+                if not element[1]:
+                    self.boards.remove(element)
+                    print("board removed")
+
+        
 
 def main():
     rospy.init_node('robot_controller')

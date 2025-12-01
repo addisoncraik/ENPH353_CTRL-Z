@@ -3,21 +3,26 @@ import numpy as np
 import math
 import cv2
 from sensor_msgs.msg import LaserScan
+from targeting import is_at_target
+import constants
 
 class BabyPID:
     def __init__(self):
         # PID gains
         self.Kp = 0.5
         self.Kd = 0.001
-        self.Ki = 0.001
+        self.Ki = 0.002
         self.imax = 25
 
         rospy.Subscriber('/Follower/rrbot/height', LaserScan, self.height_callback)
 
         # State variables
-        self.height = -1
+        self.at_target = False
+        self.height = 0.0
         self.last_dx = 0.0
         self.last_dy = 0.0
+        self.last_dz = 0.0
+        self.last_da = 0.0
         self.integral_dx = 0.0
         self.integral_dy = 0.0
         self.dx_filtered = 0.0
@@ -31,13 +36,21 @@ class BabyPID:
           avg_height = sum(valid_ranges) / len(valid_ranges)
           self.height = avg_height
        else:
-          self.height = -1
+          self.height = 0.0
 
     def calculate_action(self, babyDrone, target, board, image):
         cx, cy, angle = babyDrone
         if target is None:
             return [0.0, 0.0, 0.0]
         tx, ty = target
+        
+        self.at_target = is_at_target(babyDrone, target)
+
+        dz = 0
+        if self.at_target == True:
+            dz = constants.TARGET_HEIGHT - self.height
+        else:
+            dz = constants.CRUISE_ALTITUDE - self.height
 
         # Time delta
         now = rospy.Time.now().to_sec()
@@ -71,12 +84,12 @@ class BabyPID:
         # Save last error
         self.last_dx = dx
         self.last_dy = dy
+        self.last_dz = dz
 
         # PID output
         vx = self.Kp * dx - self.Kd * self.dx_filtered + self.Ki * self.integral_dx
         vy = self.Kp * dy - self.Kd * self.dy_filtered + self.Ki * self.integral_dy
 
-        # Optional clamp for max velocity
         world_vx = max(min(vx, 20), -20)
         world_vy = max(min(vy, 20), -20)
 
@@ -86,15 +99,19 @@ class BabyPID:
 
         angle_error = angle - target_angle
         angle_error = (angle_error + math.pi) % (2*math.pi) - math.pi
-        Ka = 0.8
+        Ka = 1.0
         world_rot = angle_error * Ka
 
+        self.last_da = angle_error
+
+        Kz = 1.5
+        drone_vz = Kz * dz
         drone_vx = world_vx * np.cos(angle) + world_vy * np.sin(angle)
         drone_vy = world_vx * np.sin(angle) - world_vy * np.cos(angle)
-
+        
         #self.visualizeCommand(image, babyDrone, (drone_vx, drone_vy), target, target_angle)
         
-        return [drone_vx, drone_vy, world_rot]
+        return [drone_vx, drone_vy, world_rot, drone_vz]
 
     def visualizeCommand(self, image, baby_pos, baby_cmd, target, target_angle):
         drone_vx, drone_vy = baby_cmd

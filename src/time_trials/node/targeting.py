@@ -33,7 +33,7 @@ def find_target(babyDrone, boards):
     return closest_board[0], closest_target
 
 def is_at_target(babyDrone, target):
-    cx, cy = babyDrone
+    cx, cy, _ = babyDrone
     tx, ty = target
 
     dist = math.sqrt((cx-tx)**2 + (cy-ty)**2)

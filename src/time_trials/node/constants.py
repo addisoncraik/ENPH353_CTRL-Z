@@ -3,16 +3,16 @@ import tensorflow as tf
 
 MAP_WIDTH = 2500
 MAP_HEIGHT = 1200
-SCALE_FACTOR = 3
+SCALE_FACTOR = 2
 
 DRONE_COLOR = np.array([17, 225, 255])
 HEAD_COLOR = np.array([255, 255, 0])
 
-TARGET_RADIUS = 20 #measured in scaled map pixels
+TARGET_RADIUS = 10 #measured in scaled map pixels
 TARGET_OFFSET = 30 #measured in scaled map pixels
-TARGET_HEIGHT = 1 #measured in meters
+TARGET_HEIGHT = 0.2 #measured in meters
 
-CRUISE_ALTITUDE = 10 #measured in meters
+CRUISE_ALTITUDE = 0.5 #measured in meters
 
 CHAR_WIDTH = 100
 CHAR_HEIGHT = 145
