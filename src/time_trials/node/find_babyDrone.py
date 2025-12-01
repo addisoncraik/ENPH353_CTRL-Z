@@ -60,8 +60,8 @@ def find_babyDrone(map, last_pos):
 
     angle = math.atan2(hy - cy, hx - cx)
 
-    if consts.DEBUG:
-        print(cx,cy,angle*180/math.pi)
+    #if consts.DEBUG:
+        #print(cx,cy,angle*180/math.pi)
 
     if consts.DEBUG:
         debug = map.copy()

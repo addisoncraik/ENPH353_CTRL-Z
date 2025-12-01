@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
-MAP_WIDTH = 2000
-MAP_HEIGHT = 900
-SCALE_FACTOR = 2
+MAP_WIDTH = 2500
+MAP_HEIGHT = 1200
+SCALE_FACTOR = 3
 
 DRONE_COLOR = np.array([17, 225, 255])
 HEAD_COLOR = np.array([255, 255, 0])
