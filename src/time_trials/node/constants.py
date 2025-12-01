@@ -22,19 +22,19 @@ CLUEBOARD_HEIGHT = 350
 
 MODEL_PATH = '/home/fizzer/ros_ws/src/time_trials/node/read_boards/clue_character_model_v6.tflite' #Need to Upload this file or change to your own
 
-# try:
-#     CNN_MODEL = tf.lite.Interpreter(model_path=MODEL_PATH)
-#     CNN_MODEL.allocate_tensors()
+try:
+    CNN_MODEL = tf.lite.Interpreter(model_path=MODEL_PATH)
+    CNN_MODEL.allocate_tensors()
 
-#     CNN_INPUTS = CNN_MODEL.get_input_details()
-#     CNN_OUTPUTS = CNN_MODEL.get_output_details()
+    CNN_INPUTS = CNN_MODEL.get_input_details()
+    CNN_OUTPUTS = CNN_MODEL.get_output_details()
 
-#     print(f"CNN Model loaded successfully from {MODEL_PATH}")
-# except Exception as e:
-#     # Use a dummy variable if model load fails, allowing script to run without prediction
-#     CNN_MODEL = None
-#     print(f"ERROR: Could not load CNN model. Prediction will be disabled.")
-#     print(e)
+    print(f"CNN Model loaded successfully from {MODEL_PATH}")
+except Exception as e:
+    # Use a dummy variable if model load fails, allowing script to run without prediction
+    CNN_MODEL = None
+    print(f"ERROR: Could not load CNN model. Prediction will be disabled.")
+    print(e)
     
 
 DEBUG = True

@@ -269,7 +269,7 @@ class Mover:
             (ex, ey),
             (0, 255, 0),
             3,
-            cv2.LINE_AA
+            cv2.LINE_AAl
         )
 
         # Display live with OpenCV (non-blocking)
