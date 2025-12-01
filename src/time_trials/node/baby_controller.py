@@ -2,6 +2,7 @@ import rospy
 import numpy as np
 import math
 import cv2
+from sensor_msgs.msg import LaserScan
 
 class BabyPID:
     def __init__(self):
@@ -11,7 +12,10 @@ class BabyPID:
         self.Ki = 0.001
         self.imax = 25
 
+        rospy.Subscriber('/Follower/rrbot/height', LaserScan, self.height_callback)
+
         # State variables
+        self.height = -1
         self.last_dx = 0.0
         self.last_dy = 0.0
         self.integral_dx = 0.0
@@ -19,6 +23,15 @@ class BabyPID:
         self.dx_filtered = 0.0
         self.dy_filtered = 0.0
         self.last_time = rospy.Time.now().to_sec()
+
+    def height_callback(self, data):
+       valid_ranges = [r for r in data.ranges if r != float('inf')]
+
+       if len(valid_ranges) > 0:
+          avg_height = sum(valid_ranges) / len(valid_ranges)
+          self.height = avg_height
+       else:
+          self.height = -1
 
     def calculate_action(self, babyDrone, target, board, image):
         cx, cy, angle = babyDrone
@@ -68,7 +81,9 @@ class BabyPID:
         world_vy = max(min(vy, 20), -20)
 
         # Heading correction (same as before)
-        target_angle = math.atan2(dy, dx)
+        bx,by = board
+        target_angle = math.atan2(by-cy, bx-cx)
+
         angle_error = angle - target_angle
         angle_error = (angle_error + math.pi) % (2*math.pi) - math.pi
         Ka = 0.8
@@ -77,9 +92,7 @@ class BabyPID:
         drone_vx = world_vx * np.cos(angle) + world_vy * np.sin(angle)
         drone_vy = world_vx * np.sin(angle) - world_vy * np.cos(angle)
 
-
-
-        self.visualizeCommand(image, babyDrone, (drone_vx, drone_vy), target, target_angle)
+        #self.visualizeCommand(image, babyDrone, (drone_vx, drone_vy), target, target_angle)
         
         return [drone_vx, drone_vy, world_rot]
 

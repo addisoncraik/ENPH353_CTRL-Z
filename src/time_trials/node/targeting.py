@@ -30,7 +30,7 @@ def find_target(babyDrone, boards):
 
     closest_target = targets[distances.index(min(distances))]
 
-    return closest_board, closest_target
+    return closest_board[0], closest_target
 
 def is_at_target(babyDrone, target):
     cx, cy = babyDrone

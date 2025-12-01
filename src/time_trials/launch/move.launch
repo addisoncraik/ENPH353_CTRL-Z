@@ -9,9 +9,9 @@
 	<group ns="Master">
 		<param name="tf_prefix" value="Master_tf" />
 		<include file="$(find robbie)/launch/robbie.launch">
-			<arg name="init_pose" value="-x 5.5 -y 1 -z 0.1 -R 0.0 -P 0.0 -Y -1.57" />
+			<arg name="init_pose" value="-x 5.5 -y 1 -z 1 -R 0.0 -P 0.0 -Y -1.57" />
 			<arg name="robot_name"  value="Master" />
-                  <arg name="camera_orientation" value="0 1.5708 0"/>
+            <arg name="camera_orientation" value="0 1.5708 0"/>
 		</include>
 		<!-- Add teleop_keyboard controller -->
 		<!-- <include file="$(find enph353_utils)/launch/desktop.launch"/> -->
@@ -21,9 +21,9 @@
       <group ns="Follower">
 		<param name="tf_prefix" value="Follower_tf" />
 		<include file="$(find robbie)/launch/robbie.launch">
-			<arg name="init_pose" value="-x 4 -y 1 -z 0.1 -R 0.0 -P 0.0 -Y -1.57" />
+			<arg name="init_pose" value="-x 4 -y 1 -z 0.5 -R 0.0 -P 0.0 -Y -1.57" />
 			<arg name="robot_name"  value="Follower" />
-                  <arg name="camera_orientation" value="0 1.5708 0"/>
+            <arg name="camera_orientation" value="0 1.5708 0"/>
 		</include>
 		<!-- Add teleop_keyboard controller -->
 		<!-- <include file="$(find enph353_utils)/launch/desktop.launch"/> -->
