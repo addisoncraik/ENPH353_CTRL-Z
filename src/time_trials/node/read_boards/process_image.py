@@ -143,9 +143,10 @@ def process_image(search_img):
 
     if consts.DEBUG:
       print(f"Total characters: {len(characters)}")
-    # if consts.DEBUG:
-    #   cv2.imshow("Step 3 - Character Mask", mask)
-    #   cv2.imshow("Step 3 - Characters Detected", image_with_rects)
+    if consts.DEBUG:
+      
+      cv2.imshow("Step 3 - Character Mask", mask)
+      cv2.imshow("Step 3 - Characters Detected", image_with_rects)
 
 
 

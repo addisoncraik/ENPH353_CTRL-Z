@@ -36,7 +36,7 @@ namespace gazebo {
   
   // PID Controller Internal Variables
   double mass;
-  double Kp = 0.01, Kd = 0.0001, Ki = 100.0, clamp = 1.0;
+  double Kp = 0.01, Kd = 0.001, Ki = 100.0, clamp = 1.0;
   common::Time lastTime;
   ignition::math::Vector3d integral_error{0,0,0};
   ignition::math::Vector3d prevError{0,0,0};
