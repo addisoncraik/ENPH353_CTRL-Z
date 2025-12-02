@@ -4,6 +4,7 @@ import rospy
 from geometry_msgs.msg import Twist, Vector3
 from std_msgs.msg import String
 from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import Imu
 
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
@@ -27,7 +28,7 @@ from targeting import find_target
 
 from baby_controller import BabyPID
 
-from read_boards.process_image import process_image
+# from read_boards.process_image import process_image
 
 import constants as consts
 from pid_controller import PIDController
@@ -106,8 +107,10 @@ class Mover:
         baby_vx, baby_vy, baby_angularz, baby_vz = self.baby.calculate_action(babyDrone, target, board, map)
         self.move_baby.linear.x = baby_vx
         self.move_baby.linear.y = baby_vy 
-        self.move_baby.angular.z = baby_angularz
         self.move_baby.linear.z = baby_vz
+        self.move_baby.angular.z = baby_angularz
+        self.move_baby.angular.x = self.baby.wx
+        self.move_baby.angular.y = self.baby.wy
         self.baby_pub.publish(self.move_baby)
         self.prev_baby_location = babyDrone
 
@@ -138,18 +141,12 @@ class Mover:
             return
         if self.baby_is_stable is True:
             count = 0
-<<<<<<< HEAD
             while (count < 1):
-                upperWord, lowerWord = process_image(cv_image)
+                # upperWord, lowerWord = process_image(cv_image)
+                upperWord = ""
+                lowerWord = ""
                 if upperWord is not None and lowerWord is not None:
                     print("upper " + upperWord + " lower " + lowerWord)
-=======
-            # TODO read the words properly. The drone can be moving here
-            while (count < 10):
-                words = process_image(cv_image)
-                if words is not None:
-                    print("upper " + words[0] + " lower " + words[1])
->>>>>>> 46c72ba639ec26682042492edb0c35d929ccd970
                 count += 1
         self.baby_is_stable = False
         
@@ -177,6 +174,7 @@ class Mover:
             return
         self.stable_baby_frames = 0
         self.baby_is_stable = True
+        
         print("baby has stabilized")
         for element in self.boards[:]:
             if element[0] == board:

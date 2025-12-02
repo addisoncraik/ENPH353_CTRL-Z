@@ -3,6 +3,8 @@ import numpy as np
 import math
 import cv2
 from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import CameraInfo
+from sensor_msgs.msg import Imu
 from targeting import is_at_target
 import constants
 from pid_controller import PIDController
@@ -10,14 +12,25 @@ from pid_controller import PIDController
 class BabyPID:
     def __init__(self):
         self.baby_controller = PIDController(pid_constants=(1.0, 0.1, 0.002), imax=25)
+        self.roll_pitch_controller = PIDController(pid_constants=(1.0, 0.1, 0.002), imax=25)
         rospy.Subscriber('/Follower/rrbot/height', LaserScan, self.height_callback)
-
+        rospy.Subscriber('/Master/rrbot/height', LaserScan, self.master_height_callback)
+        rospy.Subscriber('/Follower/imu', Imu, self.imu_callback)
         # State variables
         self.at_target = False
         self.height = 0.0
+        self.master_height = 0.0
         self.last_dz = 0.0
-
+        self.wx = 0
+        self.wy = 0
         self.cruise_altitude = 0.5
+
+    def imu_callback(self, msg):
+        wx = msg.angular_velocity.x
+        wy = msg.angular_velocity.y
+        self.wx, self.wy, _ = self.roll_pitch_controller.PID((-wx, -wy, 0))
+
+
 
     def height_callback(self, data):
        valid_ranges = [r for r in data.ranges if r != float('inf')]
@@ -28,20 +41,42 @@ class BabyPID:
        else:
           self.height = 0.0
 
+    def master_height_callback(self, data):
+        valid_ranges = [r for r in data.ranges if r != float('inf')]
+        if len(valid_ranges) > 0:
+            avg_height = sum(valid_ranges) / len(valid_ranges)
+            self.master_height = avg_height
+        else:
+            self.master_height = 0.0
+
+
     def calculate_action(self, babyDrone, target, board, image):
         cx, cy, angle = babyDrone
         if target is None:
             return [0.0, 0.0, 0.0]
         tx, ty = target
+        cx_centered, cy_centered = center_points(cx, cy)
+        tx_centered, ty_centered = center_points(tx, ty)
+
+        # adjust for parrallel axis
+        delta_x = 0
+        delta_y = 0
+        if self.master_height != 0.0:
+            delta_x = self.height / self.master_height * cx_centered
+            delta_y = self.height / self.master_height * cy_centered
+        
+        cx_mod = cx_centered - delta_x
+        cy_mod = cy_centered - delta_y
+
         # Positional error
-        dx = tx - cx
-        dy = ty - cy
+        dx = tx_centered - cx_mod
+        dy = ty_centered - cy_mod
 
         dx /= 100
         dy /= 100
+        
         dz = 0
-
-        self.at_target = is_at_target(babyDrone, target)
+        self.at_target = is_at_target((cx_mod, cy_mod, angle), (tx_centered, ty_centered))
         if self.at_target == True:
             dz = constants.TARGET_HEIGHT - self.height
         else:
@@ -50,7 +85,7 @@ class BabyPID:
         self.last_dz = dz
         # Heading correction (same as before)
         bx, by = board
-        target_angle = math.atan2(by-cy, bx-cx)
+        target_angle = math.atan2(by - cy, bx - cx)
 
         angle_error = angle - target_angle
         angle_error = (angle_error + math.pi) % (2*math.pi) - math.pi
@@ -62,7 +97,7 @@ class BabyPID:
         drone_vx = world_vx * np.cos(angle) + world_vy * np.sin(angle)
         drone_vy = world_vx * np.sin(angle) - world_vy * np.cos(angle)
         
-        #self.visualizeCommand(image, babyDrone, (drone_vx, drone_vy), target, target_angle)
+        self.visualizeCommand(image, babyDrone, (drone_vx, drone_vy), target, target_angle)
         
         return [drone_vx, drone_vy, world_rot, drone_vz]
 
@@ -138,6 +173,14 @@ class BabyPID:
         else:
             # print("cruse altitude of 2")
             return 2
+
+def center_points(x,y):
+    cx = (constants.MAP_WIDTH/constants.SCALE_FACTOR)/2
+    cy = (constants.MAP_HEIGHT/constants.SCALE_FACTOR)/2
+    x_c = x - cx
+    y_c = y - cy
+
+    return x_c, y_c
 
 
 def to_px(x, y, image):

@@ -55,6 +55,17 @@
     </visual>
   </link>
 
+    <!-- IMU link -->
+  <link name="imu_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.02 0.02 0.02"/>
+      </geometry>
+      <material name="yellow"/>
+    </visual>
+  </link>
+
   <link name='camera_link'>
     <xacro:box_inertial name="camera_link" m="${camera_mass}" x="${camera_width}" y="${camera_length}" z="${camera_height}"/>
     <collision name='camera_link_collision'>
@@ -99,6 +110,12 @@
     <origin xyz="0 0.02 -${chassis_height/3+0.01}" rpy="0 1.5708 0"/>
   </joint>
 
+  <joint name="imu_joint" type="fixed">
+    <parent link="chassis"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0.02 -${chassis_height/3}" rpy="0 0 0"/>
+  </joint>
+
   <gazebo reference="chassis">
     <material>Gazebo/Orange</material>
   </gazebo>
@@ -114,6 +131,11 @@
   <gazebo reference="lidar_link">
     <material>Gazebo/Black</material>
   </gazebo>
+
+  <gazebo reference="imu_link">
+    <material>Gazebo/Black</material>
+  </gazebo>
+
 
 
   <!-- <gazebo>
@@ -213,6 +235,27 @@
         <topicName>rrbot/height</topicName>
         <frameName>lidar_link</frameName>
       </plugin>
+    </sensor>
+  </gazebo>
+
+  <gazebo reference="imu_link">
+    <gravity>true</gravity>
+    <sensor name="imu_sensor" type="imu">
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <visualize>true</visualize>
+      <topic>rrbot/imu</topic>
+      <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+        <topicName>imu</topicName>
+        <bodyName>imu_link</bodyName>
+        <updateRateHZ>10.0</updateRateHZ>
+        <gaussianNoise>0.0</gaussianNoise>
+        <xyzOffset>0 0 0</xyzOffset>
+        <rpyOffset>0 0 0</rpyOffset>
+        <frameName>imu_link</frameName>
+        <initialOrientationAsReference>true</initialOrientationAsReference>
+      </plugin>
+      <pose>0 0 0 0 0 0</pose>
     </sensor>
   </gazebo>
 

@@ -58,7 +58,7 @@ def find_babyDrone(map, last_pos):
 
         cv2.imshow("baby_find", debug)
 
-    angle = math.atan2(hy - cy, hx - cx)
+    angle = math.atan2(hy - cy, hx - c
 
     #if consts.DEBUG:
         #print(cx,cy,angle*180/math.pi)

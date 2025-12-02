@@ -16,7 +16,7 @@ def process_image(search_img):
 
     # --- STEP 1: COLOR FILTERING ---
     if consts.DEBUG:
-      cv2.imshow("Search Image",search_img)
+      # cv2.imshow("Search Image",search_img)
       print("\n--- STEP 1: Finding Blue Board Contour ---")
 
     # Determine Target Color
@@ -38,7 +38,7 @@ def process_image(search_img):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     if not contours:
-        cv2.imshow("mask", mask)
+        # cv2.imshow("mask", mask)
         print("ERROR: No target regions found.")
         return None, None
 
@@ -64,7 +64,7 @@ def process_image(search_img):
     h, w = unwarped_image.shape[:2]
 
     if consts.DEBUG:
-      cv2.imshow("Rectified Image",unwarped_image)
+      # cv2.imshow("Rectified Image",unwarped_image)
       print(f"Rectified Image Size: {w}x{h}")
 
 
@@ -145,8 +145,8 @@ def process_image(search_img):
       print(f"Total characters: {len(characters)}")
     if consts.DEBUG:
       
-      cv2.imshow("Step 3 - Character Mask", mask)
-      cv2.imshow("Step 3 - Characters Detected", image_with_rects)
+      # cv2.imshow("Step 3 - Character Mask", mask)
+      # cv2.imshow("Step 3 - Characters Detected", image_with_rects)
 
 
 
