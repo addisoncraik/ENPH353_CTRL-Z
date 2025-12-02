@@ -50,6 +50,7 @@ class Mover:
             [(500,250), [(490, 250), (510, 250)]]
             ]
         self.height = -1
+        self.read = False
 
         # System Stability States
         self.prev_baby_location = (0,0,0)
@@ -137,20 +138,28 @@ class Mover:
             rospy.logerr(e)
             return
         if self.baby_is_stable is True:
+            
+            finished_reading = False
             count = 0
-<<<<<<< HEAD
-            while (count < 1):
+
+            while (not finished_reading and count < 10):
                 upperWord, lowerWord = process_image(cv_image)
                 if upperWord is not None and lowerWord is not None:
-                    print("upper " + upperWord + " lower " + lowerWord)
-=======
-            # TODO read the words properly. The drone can be moving here
-            while (count < 10):
-                words = process_image(cv_image)
-                if words is not None:
-                    print("upper " + words[0] + " lower " + words[1])
->>>>>>> 46c72ba639ec26682042492edb0c35d929ccd970
+
+                    if upperWord in consts.DICTIONARY:
+                        self.score_tracker.publish(str(consts.TEAM_ID+","+consts.TEAM_PASSWORD+","+consts.DICTIONARY[upperWord]+","+lowerWord))
+
+                        self.read = True
+                        finished_reading = True
+
+                    if consts.DEBUG:
+                        print("upper " + upperWord + " lower " + lowerWord)
+
+                else: 
+                    finished_reading = True
+
                 count += 1
+            
         self.baby_is_stable = False
         
 
@@ -167,9 +176,15 @@ class Mover:
     
     def process_target(self, board, target):
         tolerance = 0.25
+        if self.read is True:
+            for element in self.boards:
+                if element[0] == board:
+                    self.boards.remove(element)
+            self.read = False
+            print("Clue Submitted, Board removed")
         # TODO this logic is a bit brokey
         if self.baby.at_target is False or abs(self.baby.last_dz - consts.TARGET_HEIGHT) >= tolerance:
-            print("dz error " + str(self.baby.last_dz - consts.TARGET_HEIGHT))
+            #print("dz error " + str(self.baby.last_dz - consts.TARGET_HEIGHT))
             self.stable_baby_frames = 0
             return
         self.stable_baby_frames += 1
@@ -178,15 +193,17 @@ class Mover:
         self.stable_baby_frames = 0
         self.baby_is_stable = True
         print("baby has stabilized")
+        
         for element in self.boards[:]:
             if element[0] == board:
                 if target in element[1]:
                     element[1].remove(target)
                     print("target removed")
-
                 if not element[1]:
                     self.boards.remove(element)
                     print("board removed")
+
+                break
 
 
 def debugging_visulization(cv_image, dx, dy):
@@ -208,7 +225,7 @@ def debugging_visulization(cv_image, dx, dy):
             cv2.LINE_AA
         )
         # Display live with OpenCV (non-blocking)
-        cv2.imshow("Direction", image_with_vector)
+        #cv2.imshow("Direction", image_with_vector)
         cv2.waitKey(1)     
 
 def main():
