@@ -50,6 +50,9 @@ def process_image(search_img):
     # Get the 4 corners from the contour
     pts = find_quadrant_corners(c)
 
+    # if consts.DEBUG:
+    #   cv2.imshow("Step 1 - Blue Mask", mask)
+
     # --- STEP 2: PERSPECTIVE RECTIFICATION ---
     if consts.DEBUG:
       print("\n--- STEP 2: Rectifying Perspective ---")
@@ -61,6 +64,9 @@ def process_image(search_img):
 
     if consts.DEBUG:
       print(f"Rectified Image Size: {w}x{h}")
+    # if consts.DEBUG:
+    #   cv2.imshow("Step 2 - Unwarped Image", unwarped_image)
+
 
 
 
@@ -137,6 +143,10 @@ def process_image(search_img):
 
     if consts.DEBUG:
       print(f"Total characters: {len(characters)}")
+    # if consts.DEBUG:
+    #   cv2.imshow("Step 3 - Character Mask", mask)
+    #   cv2.imshow("Step 3 - Characters Detected", image_with_rects)
+
 
 
     # --- STEP 4: CHARACTER Organization ---
@@ -145,6 +155,7 @@ def process_image(search_img):
 
     if not characters:
         print("No characters found. Exiting.")
+        return None
     else:
       y_pos = [(c[1]) for c in characters]
       y_avg = (max(y_pos)+min(y_pos))/2
@@ -184,6 +195,9 @@ def process_image(search_img):
 
         char_img = unwarped_image[y:y+h, x:x+w]
         lower_word_images.append(char_img)
+        # if consts.DEBUG:
+        #   cv2.imshow("Character Crop", char_img)
+
 
       upper_word_images = []
       for char in upper_word_chars:
@@ -206,6 +220,7 @@ def process_image(search_img):
     upperWord = ""
     lowerWord = ""
 
+
     if len(characters) != 0:
       for char_img in upper_word_images:
         if not isinstance(char_img, np.ndarray):
@@ -223,6 +238,6 @@ def process_image(search_img):
       print(f"Upper Word: {upperWord}")
       print(f"Lower Word: {lowerWord}")
 
-      info(pts, characters, lower_word_images, upper_word_images, search_img, image_with_rects)
+      # info(pts, characters, lower_word_images, upper_word_images, search_img, image_with_rects)
 
     return upperWord, lowerWord

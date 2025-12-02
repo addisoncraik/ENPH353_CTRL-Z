@@ -38,6 +38,7 @@ class Mover:
         self.Ki = 0.2
         self.imax = 10
         self.baby = BabyPID()
+        rospy.Subscriber('/Follower/rrbot/camera1/image_raw', Image, self.baby_callback)
         rospy.Subscriber('/Master/rrbot/camera1/image_raw', Image, self.img_callback)
         rospy.Subscriber('/Master/rrbot/height', LaserScan, self.height_callback)
         self.pub = rospy.Publisher('/Master/cmd_vel', Twist, queue_size=1)
@@ -64,6 +65,7 @@ class Mover:
         self.is_master_stable = False
         self.number_stable_frames = 0
         self.stable_baby_frames = 0
+        self.baby_is_stable = False
         self.first_time_stable = True
         self.last_time = rospy.Time.now().to_sec()
         rospy.sleep(1.0)
@@ -112,10 +114,11 @@ class Mover:
           cv2.imshow("map", rgb_map)
           babyDrone = find_babyDrone(map, self.prev_baby_location)
           board, target = find_target(babyDrone, self.boards)
+          if board is None:
+            return
           baby_vx, baby_vy, baby_angularz, baby_vz = self.baby.calculate_action(babyDrone, target, board, map)
 
           self.deleteTarget(board, target)
-
           self.move_baby.linear.x = baby_vx
           self.move_baby.linear.y = baby_vy 
           self.move_baby.angular.z = baby_angularz
@@ -223,6 +226,23 @@ class Mover:
         # Display live with OpenCV (non-blocking)
         #cv2.imshow("Direction", image_with_vector)
         cv2.waitKey(1)
+    
+    def baby_callback(self, data):
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(data)
+        except CvBridgeError as e:
+            rospy.logerr(e)
+            return
+        if self.baby_is_stable is True:
+            count = 0
+            while (count < 10):
+                words = process_image(cv_image)
+                if words is None:
+                    print("upper " + words[0] + " lower " + words[1])
+                count += 1
+        self.baby_is_stable = False
+        
+
 
     def isMasterStable(self, dx, dy):
       if (dx**2 + dy**2) > 1:
@@ -234,12 +254,15 @@ class Mover:
         self.is_master_stable = True
     
     def deleteTarget(self, board, target):
-        if self.baby.at_target is False or self.baby.last_dz != consts.TARGET_HEIGHT:
+        tolerance = 0.005
+        if self.baby.at_target is False or abs(self.baby.last_dz - consts.TARGET_HEIGHT) <= tolerance:
+            self.stable_baby_frames = 0
             return
         self.stable_baby_frames += 1
         if self.stable_baby_frames < 100:
             return
         self.stable_baby_frames = 0
+        self.baby_is_stable = True
         print("baby has stabilized")
         for element in self.boards[:]:
             if element[0] == board:
