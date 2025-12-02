@@ -20,7 +20,7 @@ def find_clue_boards(img):
   # --- 2. Define Target Color and Tolerance ---
   # Using your values for the blue poles
   target_color = np.array([119, 73, 210])
-  tolerance = np.array([10, 23, 50])
+  tolerance = np.array([15, 23, 50])
 
   # --- 3. Calculate Filter Bounds ---
   lower_bound = np.clip(target_color - tolerance, [0, 0, 0], [179, 255, 255])

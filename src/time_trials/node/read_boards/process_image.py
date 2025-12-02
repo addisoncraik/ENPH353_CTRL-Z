@@ -16,12 +16,12 @@ def process_image(search_img):
 
     # --- STEP 1: COLOR FILTERING ---
     if consts.DEBUG:
-      # cv2.imshow("Search Image",search_img)
+      #cv2.imshow("Search Image",search_img)
       print("\n--- STEP 1: Finding Blue Board Contour ---")
 
     # Determine Target Color
     target_color = np.array([120, 155, 0]) #Very Important
-    tolerance = np.array([20, 100, 200]) # Don't change unless something broke
+    tolerance = np.array([20, 100, 230]) # Don't change unless something broke
 
     lower_bound = np.clip(target_color - tolerance, [0, 0, 0], [179, 255, 255])
     upper_bound = np.clip(target_color + tolerance, [0, 0, 0], [179, 255, 255])
@@ -38,7 +38,6 @@ def process_image(search_img):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     if not contours:
-        # cv2.imshow("mask", mask)
         print("ERROR: No target regions found.")
         return None, None
 
@@ -64,7 +63,7 @@ def process_image(search_img):
     h, w = unwarped_image.shape[:2]
 
     if consts.DEBUG:
-      # cv2.imshow("Rectified Image",unwarped_image)
+      #cv2.imshow("Rectified Image",unwarped_image)
       print(f"Rectified Image Size: {w}x{h}")
 
 
@@ -143,10 +142,6 @@ def process_image(search_img):
 
     if consts.DEBUG:
       print(f"Total characters: {len(characters)}")
-    if consts.DEBUG:
-      
-      # cv2.imshow("Step 3 - Character Mask", mask)
-      # cv2.imshow("Step 3 - Characters Detected", image_with_rects)
 
 
 
@@ -196,8 +191,6 @@ def process_image(search_img):
 
         char_img = unwarped_image[y:y+h, x:x+w]
         lower_word_images.append(char_img)
-        # if consts.DEBUG:
-        #   cv2.imshow("Character Crop", char_img)
 
 
       upper_word_images = []

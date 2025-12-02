@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
 
-MAP_WIDTH = 2500
-MAP_HEIGHT = 1200
+MAP_WIDTH = 3000
+MAP_HEIGHT = 1600
 SCALE_FACTOR = 2
 
 DRONE_COLOR = np.array([17, 225, 255])
@@ -19,6 +19,20 @@ CHAR_HEIGHT = 145
 
 CLUEBOARD_WIDTH = 500
 CLUEBOARD_HEIGHT = 350
+
+TEAM_ID = "CTRL-Z"
+TEAM_PASSWORD = "WEARE#1"
+
+DICTIONARY = {
+    "SIZE":"1",
+    "VICTIM":"2",
+    "CRIME":"3",
+    "TIME":"4",
+    "PLACE":"5",
+    "MOTIVE":"6",
+    "WEAPON":"7",
+    "BANDIT":"8"
+}
 
 MODEL_PATH = '/home/fizzer/ros_ws/src/time_trials/node/read_boards/clue_character_model_v6.tflite' #Need to Upload this file or change to your own
 
