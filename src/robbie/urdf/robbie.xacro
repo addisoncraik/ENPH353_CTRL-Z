@@ -5,6 +5,9 @@
   <xacro:arg name="camera_orientation" default="0 0 0"/> -->
   <xacro:property name="robot_name" value="$(arg robot_name)"/>
   <xacro:property name="camera_orientation" value="$(arg camera_orientation)"/>
+
+  <xacro:property name="lidar_samples" value="$(arg lidar_samples)"/>
+  <xacro:property name="lidar_angle" value="$(arg lidar_angle)"/>
   <!-- <xacro:property name="chassis_colour" value="$(arg chassis_colour)"/> -->
 
   <xacro:property name="camera_width" value="0.02"/>
@@ -178,16 +181,16 @@
       <ray>
         <scan>
           <horizontal>
-            <samples>50</samples>
+            <samples>${lidar_samples}</samples>
             <resolution>1</resolution>
-            <min_angle>-0.1</min_angle>
-            <max_angle>0.1</max_angle>
+            <min_angle>${-lidar_angle}</min_angle>
+            <max_angle>${lidar_angle}</max_angle>
           </horizontal>
           <vertical>
-            <samples>50</samples>
+            <samples>${lidar_samples}</samples>
             <resolution>1</resolution>
-            <min_angle>-0.1</min_angle>
-            <max_angle>0.1</max_angle>
+            <min_angle>${-lidar_angle}</min_angle>
+            <max_angle>${lidar_angle}</max_angle>
           </vertical>
         </scan>
         <range>
