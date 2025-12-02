@@ -57,7 +57,7 @@ class BabyPID:
         
         world_vx, world_vy, world_rot = self.baby_controller.PID((dx, dy, angle_error))
 
-        Kz = 1.0
+        Kz = 2.5
         drone_vz = Kz * dz
         drone_vx = world_vx * np.cos(angle) + world_vy * np.sin(angle)
         drone_vy = world_vx * np.sin(angle) - world_vy * np.cos(angle)

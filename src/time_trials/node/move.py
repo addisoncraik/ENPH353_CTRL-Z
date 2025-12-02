@@ -162,7 +162,7 @@ class Mover:
         tolerance = 0.25
         # TODO this logic is a bit brokey
         if self.baby.at_target is False or abs(self.baby.last_dz - consts.TARGET_HEIGHT) >= tolerance:
-            print("dz error " + str(self.baby.last_dz - consts.TARGET_HEIGHT))
+            # print("dz error " + str(self.baby.last_dz - consts.TARGET_HEIGHT))
             self.stable_baby_frames = 0
             return
         self.stable_baby_frames += 1
