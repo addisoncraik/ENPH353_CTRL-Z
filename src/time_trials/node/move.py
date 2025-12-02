@@ -138,11 +138,18 @@ class Mover:
             return
         if self.baby_is_stable is True:
             count = 0
+<<<<<<< HEAD
+            while (count < 1):
+                upperWord, lowerWord = process_image(cv_image)
+                if upperWord is not None and lowerWord is not None:
+                    print("upper " + upperWord + " lower " + lowerWord)
+=======
             # TODO read the words properly. The drone can be moving here
             while (count < 10):
                 words = process_image(cv_image)
                 if words is not None:
                     print("upper " + words[0] + " lower " + words[1])
+>>>>>>> 46c72ba639ec26682042492edb0c35d929ccd970
                 count += 1
         self.baby_is_stable = False
         
