@@ -37,8 +37,6 @@ def read_single_char_cnn(char_image):
   else:
       return '?'
 
-
-
 def insert_spaces(word_list, avg_width):
   """
   Inserts a placeholder tuple ('space_x', 'space_y', 'space_w', 'space_h') into the list
@@ -68,7 +66,6 @@ def insert_spaces(word_list, avg_width):
 
   return formatted_list
 
-
 def four_point_transform(image, pts):
     """
     Warps a 4-point ROI into a flat rectangle.
@@ -91,7 +88,6 @@ def four_point_transform(image, pts):
     warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
 
     return warped, M
-
 
 def find_quadrant_corners(contour, approx_factor=0.01):
   """

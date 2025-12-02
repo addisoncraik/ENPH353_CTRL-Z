@@ -22,7 +22,6 @@ from find_center import find_course_center
 from find_clueboards import find_clue_boards
 
 from find_babyDrone import find_babyDrone
-from targeting import is_at_target
 from targeting import find_target
 
 from baby_controller import BabyPID
@@ -34,22 +33,34 @@ from pid_controller import PIDController
 
 class Mover:
     def __init__(self):
-        self.master_controller = PIDController(pid_constants=(1.5, 0.3, 0.2), imax=10)
-        self.baby = BabyPID()
+        
+        #Subscribe to Topics
         rospy.Subscriber('/Follower/rrbot/camera1/image_raw', Image, self.baby_camera_callback)
         rospy.Subscriber('/Master/rrbot/camera1/image_raw', Image, self.master_camera_callback)
         rospy.Subscriber('/Master/rrbot/height', LaserScan, self.height_callback)
+
+        #Create Publishers
+        self.debug_pub = rospy.Publisher("/centering_debug", Vector3, queue_size=1)
         self.pub = rospy.Publisher('/Master/cmd_vel', Twist, queue_size=1)
         self.baby_pub = rospy.Publisher('/Follower/cmd_vel', Twist, queue_size=1)
         self.score_tracker = rospy.Publisher('/score_tracker', String, queue_size=1)
-        self.debug_pub = rospy.Publisher("/centering_debug", Vector3, queue_size=1)
+
+        #Initialize Sub-Objects
+        self.baby = BabyPID()
         self.bridge = CvBridge()
         self.move = Twist()
         self.move_baby = Twist()
+        self.master_controller = PIDController(pid_constants=(1.5, 0.3, 0.2), imax=10)
+
+        #Store Clueboard Locations
         self.boards = [
             [(500,250), [(490, 250), (510, 250)]]
             ]
+        
+        #Track Height
         self.height = -1
+
+        #Track Whether we Have Succesfuly Read a Sign
         self.read = False
 
         # System Stability States
@@ -111,7 +122,6 @@ class Mover:
         self.move_baby.linear.z = baby_vz
         self.baby_pub.publish(self.move_baby)
         self.prev_baby_location = babyDrone
-
         
     def stabilize_master(self, cv_image):
         dx,dy,dz = find_course_center(cv_image)
@@ -128,8 +138,7 @@ class Mover:
         self.pub.publish(self.move)
 
         if consts.DEBUG is True:
-            debugging_visulization(cv_image, dx, dy)
-        
+            debugging_visulization(cv_image, dx, dy)   
     
     def baby_camera_callback(self, data):
         try:
@@ -162,8 +171,6 @@ class Mover:
             
         self.baby_is_stable = False
         
-
-
     def check_master_stability(self, dx, dy):
         # verify that the magnitude of the error function has remained below a threshold
         if (dx**2 + dy**2) > 1:
@@ -232,6 +239,10 @@ def main():
     rospy.init_node('robot_controller')
     try:
         mover = Mover()
+        
+        #Start ScoreBoard
+        mover.score_tracker.publish(str(consts.TEAM_ID+","+consts.TEAM_PASSWORD+",0,xxxx"))
+
     except Exception as e:
         rospy.logerr("Failed to initialize Mover: %s", e)
         return
