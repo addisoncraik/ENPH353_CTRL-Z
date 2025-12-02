@@ -23,7 +23,7 @@ def process_image(search_img):
     lower_bound = np.clip(target_color - tolerance, [0, 0, 0], [179, 255, 255])
     upper_bound = np.clip(target_color + tolerance, [0, 0, 0], [179, 255, 255])
 
-    image_hsv = cv2.cvtColor(search_img, cv2.COLOR_BGR2HSV)
+    image_hsv = cv2.cvtColor(search_img, cv2.COLOR_RGB2HSV)
     mask = cv2.inRange(image_hsv, lower_bound, upper_bound)
 
     # Clean up mask
@@ -85,7 +85,7 @@ def process_image(search_img):
     upper_bound = np.clip(target_color + tolerance, [0, 0, 0], [179, 255, 255])
 
     # Apply color filter
-    image_hsv = cv2.cvtColor(unwarped_image, cv2.COLOR_BGR2HSV)
+    image_hsv = cv2.cvtColor(unwarped_image, cv2.COLOR_RGB2HSV)
     mask = cv2.inRange(image_hsv, lower_bound, upper_bound)
 
     # Get image data
@@ -143,9 +143,10 @@ def process_image(search_img):
 
     if consts.DEBUG:
       print(f"Total characters: {len(characters)}")
-    # if consts.DEBUG:
-    #   cv2.imshow("Step 3 - Character Mask", mask)
-    #   cv2.imshow("Step 3 - Characters Detected", image_with_rects)
+    if consts.DEBUG:
+      
+      cv2.imshow("Step 3 - Character Mask", mask)
+      cv2.imshow("Step 3 - Characters Detected", image_with_rects)
 
 
 
