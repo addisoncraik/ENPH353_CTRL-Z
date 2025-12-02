@@ -96,6 +96,8 @@ class Mover:
             self.move_baby.linear.y = 0
             self.move_baby.linear.z = 0
             self.move_baby.angular.z = 0
+            self.move_baby.angular.x = self.baby.wx
+            self.move_baby.angular.y = self.baby.wy
             self.baby_pub.publish(self.move_baby)
             return
         # If the master has just stabilized itself at its lookout, find the clue boards
