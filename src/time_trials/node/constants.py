@@ -20,7 +20,7 @@ CHAR_HEIGHT = 145
 CLUEBOARD_WIDTH = 500
 CLUEBOARD_HEIGHT = 350
 
-MODEL_PATH = '/home/fizzer/competition_ws/src/time_trials/node/read_boards/clue_character_model_v6.tflite' #Need to Upload this file or change to your own
+MODEL_PATH = '/home/fizzer/ros_ws/src/time_trials/node/read_boards/clue_character_model_v6.tflite' #Need to Upload this file or change to your own
 
 try:
     CNN_MODEL = tf.lite.Interpreter(model_path=MODEL_PATH)

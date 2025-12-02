@@ -235,10 +235,10 @@ class Mover:
             return
         if self.baby_is_stable is True:
             count = 0
-            while (count < 10):
-                words = process_image(cv_image)
-                if words is None:
-                    print("upper " + words[0] + " lower " + words[1])
+            while (count < 1):
+                upperWord, lowerWord = process_image(cv_image)
+                if upperWord is not None and lowerWord is not None:
+                    print("upper " + upperWord + " lower " + lowerWord)
                 count += 1
         self.baby_is_stable = False
         

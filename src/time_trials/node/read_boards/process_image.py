@@ -10,10 +10,13 @@ from .helper_functions import read_single_char_cnn
 from .helper_functions import info
 
 def process_image(search_img):
-    if search_img is None: return
+    if search_img is None: 
+      print("No Image!")
+      return None, None
 
     # --- STEP 1: COLOR FILTERING ---
     if consts.DEBUG:
+      cv2.imshow("Search Image",search_img)
       print("\n--- STEP 1: Finding Blue Board Contour ---")
 
     # Determine Target Color
@@ -23,7 +26,7 @@ def process_image(search_img):
     lower_bound = np.clip(target_color - tolerance, [0, 0, 0], [179, 255, 255])
     upper_bound = np.clip(target_color + tolerance, [0, 0, 0], [179, 255, 255])
 
-    image_hsv = cv2.cvtColor(search_img, cv2.COLOR_BGR2HSV)
+    image_hsv = cv2.cvtColor(search_img, cv2.COLOR_RGB2HSV)
     mask = cv2.inRange(image_hsv, lower_bound, upper_bound)
 
     # Clean up mask
@@ -35,8 +38,9 @@ def process_image(search_img):
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     if not contours:
+        cv2.imshow("mask", mask)
         print("ERROR: No target regions found.")
-        return
+        return None, None
 
 
     # Find the largest contour
@@ -50,9 +54,6 @@ def process_image(search_img):
     # Get the 4 corners from the contour
     pts = find_quadrant_corners(c)
 
-    # if consts.DEBUG:
-    #   cv2.imshow("Step 1 - Blue Mask", mask)
-
     # --- STEP 2: PERSPECTIVE RECTIFICATION ---
     if consts.DEBUG:
       print("\n--- STEP 2: Rectifying Perspective ---")
@@ -63,9 +64,8 @@ def process_image(search_img):
     h, w = unwarped_image.shape[:2]
 
     if consts.DEBUG:
+      cv2.imshow("Rectified Image",unwarped_image)
       print(f"Rectified Image Size: {w}x{h}")
-    # if consts.DEBUG:
-    #   cv2.imshow("Step 2 - Unwarped Image", unwarped_image)
 
 
 
@@ -85,7 +85,7 @@ def process_image(search_img):
     upper_bound = np.clip(target_color + tolerance, [0, 0, 0], [179, 255, 255])
 
     # Apply color filter
-    image_hsv = cv2.cvtColor(unwarped_image, cv2.COLOR_BGR2HSV)
+    image_hsv = cv2.cvtColor(unwarped_image, cv2.COLOR_RGB2HSV)
     mask = cv2.inRange(image_hsv, lower_bound, upper_bound)
 
     # Get image data
@@ -155,7 +155,7 @@ def process_image(search_img):
 
     if not characters:
         print("No characters found. Exiting.")
-        return None
+        return None, None
     else:
       y_pos = [(c[1]) for c in characters]
       y_avg = (max(y_pos)+min(y_pos))/2
@@ -226,18 +226,18 @@ def process_image(search_img):
         if not isinstance(char_img, np.ndarray):
           upperWord += " "
           continue
-        upperWord += read_single_char_cnn(char_img)
+        upperWord += read_single_char_cnn(cv2.cvtColor(char_img,cv2.COLOR_RGB2BGR))
 
       for char_img in lower_word_images:
         if not isinstance(char_img, np.ndarray):
           lowerWord += " "
           continue
-        lowerWord += read_single_char_cnn(char_img)
+        lowerWord += read_single_char_cnn(cv2.cvtColor(char_img,cv2.COLOR_RGB2BGR))
 
     if consts.DEBUG:
       print(f"Upper Word: {upperWord}")
       print(f"Lower Word: {lowerWord}")
 
-      # info(pts, characters, lower_word_images, upper_word_images, search_img, image_with_rects)
+    #info(pts, characters, lower_word_images, upper_word_images, search_img, image_with_rects)
 
     return upperWord, lowerWord

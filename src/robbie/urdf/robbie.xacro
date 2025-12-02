@@ -133,7 +133,7 @@
   </gazebo> -->
 
   <gazebo reference="camera_link">
-    <sensor type="camera" name="camera1">
+    <sensor type="depth" name="depth_camera">
       <update_rate>40.0</update_rate>
       <camera name="head">
         <horizontal_fov>1.5</horizontal_fov>
@@ -143,8 +143,8 @@
           <format>R8G8B8</format>
         </image>
         <clip>
-          <near>0.02</near>
-          <far>300</far>
+          <near>0.01</near>
+          <far>100</far>
         </clip>
         <noise>
           <type>gaussian</type>
@@ -155,12 +155,15 @@
           <stddev>0.007</stddev>
         </noise>
       </camera>
-      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+      <plugin name="camera_controller" filename="libgazebo_ros_depth_camera.so">
         <alwaysOn>true</alwaysOn>
         <updateRate>0.0</updateRate>
         <cameraName>rrbot/camera1</cameraName>
         <imageTopicName>image_raw</imageTopicName>
         <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <depthImageTopicName>depth/image_raw/</depthImageTopicName>
+        <depthImageCameraInfoTopicName>depth/camera_info</depthImageCameraInfoTopicName>
+        <pointCloudTopicName>depth/points</pointCloudTopicName>
         <frameName>camera_link</frameName>
         <hackBaseline>0.07</hackBaseline>
         <distortionK1>0.0</distortionK1>
