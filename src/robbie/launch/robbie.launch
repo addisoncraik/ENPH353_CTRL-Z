@@ -2,9 +2,11 @@
   <arg name="robot_name"/>
   <arg name="init_pose"/>
   <arg name="camera_orientation"/>
+  <arg name="lidar_samples"/>
+  <arg name="lidar_angle"/>
   <arg name="model" default="$(find robbie)/urdf/robbie.xacro"/>
 
-  <param name="robot_description" command="$(find xacro)/xacro '$(arg model)' robot_name:='$(arg robot_name)' camera_orientation:='$(arg camera_orientation)'" />
+  <param name="robot_description" command="$(find xacro)/xacro '$(arg model)' robot_name:='$(arg robot_name)' camera_orientation:='$(arg camera_orientation)' lidar_samples:='$(arg lidar_samples)' lidar_angle:='$(arg lidar_angle)'" />
 
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"
         args="$(arg init_pose) -unpause -urdf -model $(arg robot_name) -param robot_description" respawn="false" output="screen" />
