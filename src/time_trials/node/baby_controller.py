@@ -27,6 +27,8 @@ class BabyPID:
         self.integral_dy = 0.0
         self.dx_filtered = 0.0
         self.dy_filtered = 0.0
+
+        self.cruise_altitude = 0.5
         self.last_time = rospy.Time.now().to_sec()
 
     def height_callback(self, data):
@@ -50,7 +52,8 @@ class BabyPID:
         if self.at_target == True:
             dz = constants.TARGET_HEIGHT - self.height
         else:
-            dz = constants.CRUISE_ALTITUDE - self.height
+            cruise_altitude = self.calculateCruiseAltitude(babyDrone)
+            dz = cruise_altitude - self.height
 
         # Time delta
         now = rospy.Time.now().to_sec()
@@ -104,7 +107,7 @@ class BabyPID:
 
         self.last_da = angle_error
 
-        Kz = 1.5
+        Kz = 1.0
         drone_vz = Kz * dz
         drone_vx = world_vx * np.cos(angle) + world_vy * np.sin(angle)
         drone_vy = world_vx * np.sin(angle) - world_vy * np.cos(angle)
@@ -167,6 +170,26 @@ class BabyPID:
         # Display live with OpenCV (non-blocking)
         cv2.imshow("Baby Controller", image_with_vector)
         cv2.waitKey(1)
+
+    def calculateCruiseAltitude(self, baby_drone):
+        x, y, _ = baby_drone
+        cx = (constants.MAP_WIDTH/constants.SCALE_FACTOR)/2
+        cy = (constants.MAP_HEIGHT/constants.SCALE_FACTOR)/2
+        x_c = x - cx
+        y_c = y - cy
+        print("current pos x_c,y_c " + str(x_c) + ',' + str(y_c))
+        if x < 600 or x > 990:
+            print("cruise altitude of 0.5")
+            return 0.5
+        elif y > 400: 
+            return 0.5
+        else:
+            print("cruse altitude of 2")
+            return 2
+
+
+
+
 
 def to_px(x, y, image):
     h, w = image.shape[:2]

@@ -112,6 +112,8 @@ class Mover:
           cv2.imshow("map", rgb_map)
           babyDrone = find_babyDrone(map, self.prev_baby_location)
           board, target = find_target(babyDrone, self.boards)
+          if board is None:
+            return
           baby_vx, baby_vy, baby_angularz, baby_vz = self.baby.calculate_action(babyDrone, target, board, map)
 
           self.deleteTarget(board, target)
@@ -234,7 +236,9 @@ class Mover:
         self.is_master_stable = True
     
     def deleteTarget(self, board, target):
-        if self.baby.at_target is False or self.baby.last_dz != consts.TARGET_HEIGHT:
+        tolerance = 0.005
+        if self.baby.at_target is False or abs(self.baby.last_dz - consts.TARGET_HEIGHT) <= tolerance:
+            self.stable_baby_frames = 0
             return
         self.stable_baby_frames += 1
         if self.stable_baby_frames < 100:
