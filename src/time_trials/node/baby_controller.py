@@ -177,14 +177,14 @@ class BabyPID:
         cy = (constants.MAP_HEIGHT/constants.SCALE_FACTOR)/2
         x_c = x - cx
         y_c = y - cy
-        print("current pos x_c,y_c " + str(x_c) + ',' + str(y_c))
+        # print("current pos x_c,y_c " + str(x_c) + ',' + str(y_c))
         if x < 600 or x > 990:
-            print("cruise altitude of 0.5")
+            # print("cruise altitude of 0.5")
             return 0.5
         elif y > 400: 
             return 0.5
         else:
-            print("cruse altitude of 2")
+            # print("cruse altitude of 2")
             return 2
 
 
