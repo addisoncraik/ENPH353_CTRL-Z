@@ -20,7 +20,7 @@ def find_clue_boards(img):
   # --- 2. Define Target Color and Tolerance ---
   # Using your values for the blue poles
   target_color = np.array([119, 73, 210])
-  tolerance = np.array([15, 23, 50])
+  tolerance = np.array([15, 10, 50])
 
   # --- 3. Calculate Filter Bounds ---
   lower_bound = np.clip(target_color - tolerance, [0, 0, 0], [179, 255, 255])
@@ -64,14 +64,14 @@ def find_clue_boards(img):
         cx2 = x2+w2/2
         cy2 = y2+h2/2
 
-        if cv2.contourArea(c2) < 15:
+        if cv2.contourArea(c2) < 50:
             continue
         
-        if abs(cx1-cx2) < 35 and abs(cy1-cy2) < 5 and w1 > h1:
+        if abs(cx1-cx2) < 50 and abs(cy1-cy2) < 5 and w1 > h1:
             new_points = np.concatenate((new_contour,c2), axis=0)
             new_contour = cv2.convexHull(new_points)
             continue
-        if abs(cx1-cx2) < 5 and abs(cy1-cy2) < 35 and w1 < h1:
+        if abs(cx1-cx2) < 5 and abs(cy1-cy2) < 50 and w1 < h1:
             new_points = np.concatenate((new_contour,c2), axis=0)
             new_contour = cv2.convexHull(new_points)
     
@@ -122,6 +122,7 @@ def find_clue_boards(img):
 
       all_boards.append(board)
     
+  debug = cv2.resize(debug, (int(consts.MAP_WIDTH/consts.SCALE_FACTOR),int(consts.MAP_HEIGHT/consts.SCALE_FACTOR)))
   cv2.imshow("Clueboards Found", debug)
   
   return all_boards
