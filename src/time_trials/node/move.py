@@ -64,6 +64,9 @@ class Mover:
         #Track Whether we Have Succesfuly Read a Sign
         self.read = False
 
+        #Track Whether we have finished the course
+        self.sent_terminator = False
+
         # System Stability States
         self.prev_baby_location = (0,0,0)
         self.is_master_stable = False
@@ -88,6 +91,10 @@ class Mover:
         except CvBridgeError as e:
             rospy.logerr(e)
             return
+        
+        if not self.boards and self.is_master_stable is True and self.sent_terminator is False:
+            self.sent_terminator = True
+            self.score_tracker.publish(str(consts.TEAM_ID+','+consts.TEAM_PASSWORD+',-1,xxxx'))
 
         # stabilize the master from its lookout point
         self.stabilize_master(cv_image)
