@@ -150,9 +150,9 @@ class Mover:
             count = 0
 
             while (not finished_reading and count < 10):
-                # upperWord, lowerWord = process_image(cv_image)
+                upperWord, lowerWord = process_image(cv_image)
                 # TODO this is not what its reading
-                upperWord, lowerWord = "rain", "coat"
+                #upperWord, lowerWord = "rain", "coat"
                 if upperWord is not None and lowerWord is not None:
 
                     if upperWord in consts.DICTIONARY:
@@ -185,7 +185,7 @@ class Mover:
         tolerance = 0.25
         if self.read is True:
             for element in self.boards:
-                if element[0] == board:
+                if element[0] == board and (len(element[1]) == 1 or len(element[1]) == 0):
                     self.boards.remove(element)
             self.read = False
             print("Clue Submitted, Board removed")
