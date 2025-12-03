@@ -139,12 +139,12 @@ public:
     // Apply the force and the anglular velocity
     this->base_link->AddForce(force);
     this->model->SetAngularVel(this->angularCmd);
-    ROS_INFO_STREAM_THROTTLE(1,
-      "Force: " << force <<
-      ", WorldVel: " << model->WorldLinearVel() <<
-      ", commandVel: " << linearCmd <<
-      ", Mass*g: " << mass*9.81
-    );
+    // ROS_INFO_STREAM_THROTTLE(1,
+    //   "Force: " << force <<
+    //   ", WorldVel: " << model->WorldLinearVel() <<
+    //   ", commandVel: " << linearCmd <<
+    //   ", Mass*g: " << mass*9.81
+    // );
   }
 
   void cfgCallback(twistflyplugin::TwistPIDConfig &config, uint32_t level){

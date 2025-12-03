@@ -25,9 +25,9 @@
 		<include file="$(find robbie)/launch/robbie.launch">
 			<arg name="init_pose" value="-x 4 -y 1 -z 0.5 -R 0.0 -P 0.0 -Y -1.57" />
 			<arg name="robot_name"  value="Follower" />
-            <arg name="camera_orientation" value="0 0.7 0"/>
-			<arg name="lidar_samples" value="50"/>
-			<arg name="lidar_angle" value="0.1"/>
+            <arg name="camera_orientation" value="0 0.5 0"/>
+			<arg name="lidar_samples" value="100"/>
+			<arg name="lidar_angle" value="0.5"/>
 		</include>
 		<!-- Add teleop_keyboard controller -->
 		<!-- <include file="$(find enph353_utils)/launch/desktop.launch"/> -->

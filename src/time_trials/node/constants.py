@@ -9,7 +9,7 @@ DRONE_COLOR = np.array([17, 225, 255])
 HEAD_COLOR = np.array([255, 255, 0])
 
 TARGET_RADIUS = 20 #measured in scaled map pixels
-TARGET_OFFSET = 25 #measured in scaled map pixels
+TARGET_OFFSET = 30 #measured in scaled map pixels
 TARGET_HEIGHT = 0.2 #measured in meters
 
 CRUISE_ALTITUDE = 0.5 #measured in meters

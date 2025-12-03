@@ -56,7 +56,7 @@ def find_babyDrone(map, last_pos):
         cv2.circle(debug, (cx, cy), 3, (0, 0, 255), -1)
         cv2.circle(debug, (hx, hy), 3, (255, 0, 0), -1)
 
-        cv2.imshow("baby_find", debug)
+        # cv2.imshow("baby_find", debug)
 
     angle = math.atan2(hy - cy, hx - cx)
 
@@ -85,6 +85,6 @@ def find_babyDrone(map, last_pos):
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.6, (0, 255, 0), 2)
 
-        cv2.imshow("baby orientation", debug)
+        # cv2.imshow("baby orientation", debug)
 
     return cx, cy, angle

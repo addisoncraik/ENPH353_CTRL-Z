@@ -122,6 +122,6 @@ def find_clue_boards(img):
 
       all_boards.append(board)
     
-  cv2.imshow("Clueboards Found", debug)
+#   cv2.imshow("Clueboards Found", debug)
   
   return all_boards

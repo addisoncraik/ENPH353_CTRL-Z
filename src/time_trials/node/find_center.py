@@ -61,7 +61,7 @@ def find_course_center(image):
     # if (ratio_white_to_total < 0.40):
     #   dz = 0
     # else:
-    dz = 10 * (ratio_white_to_total - 0.5)
+    dz = 10 * (ratio_white_to_total - 0.4)
     # Define thresholds for vertical adjustment
     # These thresholds might need tuning based on actual drone height and field of view
     too_low_threshold = 0.70 # If course takes up > 90% of frame, drone is too low

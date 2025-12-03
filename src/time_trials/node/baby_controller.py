@@ -2,6 +2,7 @@ import rospy
 import numpy as np
 import math
 import cv2
+import tf
 from sensor_msgs.msg import LaserScan
 from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import Imu
@@ -12,7 +13,7 @@ from pid_controller import PIDController
 class BabyPID:
     def __init__(self):
         self.baby_controller = PIDController(pid_constants=(1.0, 0.1, 0.002), imax=25)
-        self.roll_pitch_controller = PIDController(pid_constants=(1.0, 0.1, 0.002), imax=25)
+        self.roll_pitch_controller = PIDController(pid_constants=(1.5, 0.3, 0.00), imax=2)
         rospy.Subscriber('/Follower/rrbot/height', LaserScan, self.height_callback)
         rospy.Subscriber('/Master/rrbot/height', LaserScan, self.master_height_callback)
         rospy.Subscriber('/Follower/imu', Imu, self.imu_callback)
@@ -26,9 +27,29 @@ class BabyPID:
         self.cruise_altitude = 0.5
 
     def imu_callback(self, msg):
-        wx = msg.angular_velocity.x
-        wy = msg.angular_velocity.y
-        self.wx, self.wy, _ = self.roll_pitch_controller.PID((-wx, -wy, 0))
+        orientation = msg.orientation
+        quaternion = (
+            orientation.x,
+            orientation.y,
+            orientation.z,
+            orientation.w
+        )
+        euler = tf.transformations.euler_from_quaternion(quaternion)
+
+        roll = euler[0]
+        pitch = euler[1]
+        # Get level errors
+        roll_error  = 0 - roll
+        pitch_error = 0 - pitch
+
+        # PID
+        roll_cmd, pitch_cmd, _ = self.roll_pitch_controller.PID((roll_error, pitch_error, 0))
+
+        # Apply to actuators CORRECTLY
+        self.wx = -roll_cmd     # roll actuator
+        self.wy = -pitch_cmd    # pitch actuator
+        print("roll: " + str(roll) + " pitch: " + str(pitch))
+        print("response: roll: " + str(roll_cmd) + " pitc: " + str(pitch_cmd))
 
 
 
@@ -61,9 +82,9 @@ class BabyPID:
         # adjust for parrallel axis
         delta_x = 0
         delta_y = 0
-        if self.master_height != 0.0:
+        if self.master_height != 0.0 and cx_centered > 0:
             delta_x = self.height / self.master_height * cx_centered
-            delta_y = self.height / self.master_height * cy_centered
+            delta_y = self.height / self.master_height * cy_centered 
         
         cx_mod = cx_centered - delta_x
         cy_mod = cy_centered - delta_y
@@ -92,7 +113,7 @@ class BabyPID:
         
         world_vx, world_vy, world_rot = self.baby_controller.PID((dx, dy, angle_error))
 
-        Kz = 2.5
+        Kz = 2.0
         drone_vz = Kz * dz
         drone_vx = world_vx * np.cos(angle) + world_vy * np.sin(angle)
         drone_vy = world_vx * np.sin(angle) - world_vy * np.cos(angle)
@@ -165,11 +186,13 @@ class BabyPID:
         x_c = x - cx
         y_c = y - cy
         # print("current pos x_c,y_c " + str(x_c) + ',' + str(y_c))
-        if x < 500 or x > 990:
+        if x < 600 or x > 990:
             # print("cruise altitude of 0.5")
             return 0.5
         elif y > 400: 
             return 0.5
+        # elif x > 600 and x < 700:
+        #     return 4
         else:
             # print("cruse altitude of 2")
             return 2

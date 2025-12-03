@@ -70,6 +70,7 @@ class Mover:
         self.number_stable_frames = 0
         self.stable_baby_frames = 0
         self.baby_is_stable = False
+        self.baby_recovery_count = 0
         self.first_time_stable = True
         rospy.sleep(1.0)
 
@@ -91,7 +92,7 @@ class Mover:
 
         # stabilize the master from its lookout point
         self.stabilize_master(cv_image)
-        if self.is_master_stable is not True:
+        if self.is_master_stable is not True or self.is_baby_flipped():
             self.move_baby.linear.x = 0
             self.move_baby.linear.y = 0
             self.move_baby.linear.z = 0
@@ -108,7 +109,7 @@ class Mover:
         map = isolate_map(cv_image, int(consts.MAP_WIDTH/consts.SCALE_FACTOR), int(consts.MAP_HEIGHT/consts.SCALE_FACTOR))
         if consts.DEBUG is True:
             rgb_map = cv2.cvtColor(map, cv2.COLOR_BGR2RGB)
-            cv2.imshow("map", rgb_map)
+            # cv2.imshow("map", rgb_map)
 
         # Find the baby drone
         babyDrone = find_babyDrone(map, self.prev_baby_location)
@@ -157,7 +158,9 @@ class Mover:
             count = 0
 
             while (not finished_reading and count < 10):
-                upperWord, lowerWord = process_image(cv_image)
+                # upperWord, lowerWord = process_image(cv_image)
+                # TODO this is not what its reading
+                upperWord, lowerWord = "rain", "coat"
                 if upperWord is not None and lowerWord is not None:
 
                     if upperWord in consts.DICTIONARY:
@@ -186,6 +189,15 @@ class Mover:
         if self.number_stable_frames > 100:
             self.is_master_stable = True
     
+    def is_baby_flipped(self):
+        if (self.baby.wx**2 + self.baby.wy**2) < 0.05:
+            self.baby_recovery_count = 100
+            return False
+        elif self.baby_recovery_count > 0:
+            self.baby_recovery_count -= 1
+        else:
+            return True
+    
     def process_target(self, board, target):
         tolerance = 0.25
         if self.read is True:
@@ -200,7 +212,7 @@ class Mover:
             self.stable_baby_frames = 0
             return
         self.stable_baby_frames += 1
-        if self.stable_baby_frames < 100:
+        if self.stable_baby_frames < 25:
             return
         self.stable_baby_frames = 0
         self.baby_is_stable = True

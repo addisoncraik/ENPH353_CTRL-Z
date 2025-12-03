@@ -37,6 +37,4 @@ def is_at_target(babyDrone, target):
     tx, ty = target
 
     dist = math.sqrt((cx-tx)**2 + (cy-ty)**2)
-    print("corrected distance " + str(dist))
-
     return dist < consts.TARGET_RADIUS
