@@ -143,9 +143,9 @@ class Mover:
             count = 0
 
             while (not finished_reading and count < 10):
-                # upperWord, lowerWord = process_image(cv_image)
+                upperWord, lowerWord = process_image(cv_image)
                 # TODO this is not what its reading
-                upperWord, lowerWord = "rain", "coat"
+                # upperWord, lowerWord = "rain", "coat"
                 if upperWord is not None and lowerWord is not None:
 
                     if upperWord in consts.DICTIONARY:
@@ -183,10 +183,11 @@ class Mover:
             self.read = False
             print("Clue Submitted, Board removed")
         # TODO this logic is a bit brokey
-        if self.baby.at_target is False or abs(self.baby.last_dz - consts.TARGET_HEIGHT) >= tolerance:
+        if self.baby.at_target is False or abs(self.baby.last_dz - consts.TARGET_HEIGHT) >= tolerance or self.baby.aligned_with_target is False:
             #print("dz error " + str(self.baby.last_dz - consts.TARGET_HEIGHT))
             self.stable_baby_frames = 0
             return
+
         self.stable_baby_frames += 1
         if self.stable_baby_frames < 25:
             return
