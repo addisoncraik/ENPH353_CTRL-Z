@@ -34,7 +34,7 @@ DICTIONARY = {
     "BANDIT":"8"
 }
 
-MODEL_PATH = '/home/fizzer/ros_ws/src/time_trials/node/read_boards/clue_character_model_v6.tflite' #Need to Upload this file or change to your own
+MODEL_PATH = '/home/fizzer/competition_ws/src/time_trials/node/read_boards/clue_character_model_v6.tflite' #Need to Upload this file or change to your own
 
 try:
     CNN_MODEL = tf.lite.Interpreter(model_path=MODEL_PATH)

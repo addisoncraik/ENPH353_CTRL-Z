@@ -15,7 +15,7 @@ from geometry_msgs.msg import Twist
 class BabyPID:
     def __init__(self):
         self.baby_controller = PIDController(pid_constants=(1.0, 0.1, 0.002), imax=25)
-        self.roll_pitch_controller = PIDController(pid_constants=(10.0, 0.1, 0.00), imax=10.0, tuning=False)
+        self.roll_pitch_controller = PIDController(pid_constants=(10.0, 1.0, 0.00), imax=10.0, tuning=False)
         rospy.Subscriber('/Follower/rrbot/height', LaserScan, self.height_callback)
         rospy.Subscriber('/Master/rrbot/height', LaserScan, self.master_height_callback)
         rospy.Subscriber('/Follower/imu', Imu, self.imu_callback)
@@ -28,6 +28,7 @@ class BabyPID:
 
         # State variables
         self.at_target = False
+        self.aligned_with_target = False
         self.angular_stability = True
         self.angular_stability_counter = 0
         self.height = 0.0
@@ -145,6 +146,11 @@ class BabyPID:
 
         angle_error = angle - target_angle
         angle_error = (angle_error + math.pi) % (2*math.pi) - math.pi
+
+        if abs(angle_error) > 0.1:
+            self.aligned_with_target = False
+        else:
+            self.aligned_with_target = True
         
         world_vx, world_vy, world_rot = self.baby_controller.PID((dx, dy, angle_error))
 
