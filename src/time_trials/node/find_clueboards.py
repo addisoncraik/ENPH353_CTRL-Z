@@ -44,6 +44,7 @@ def find_clue_boards(img):
   debug = mask.copy()
 
   filtered_contours = []
+  contours = list(contours)
 
   for c1 in contours:
     x1,y1,w1,h1 = cv2.boundingRect(c1)
