@@ -27,7 +27,7 @@ from targeting import find_target
 
 from baby_controller import BabyPID
 
-# from read_boards.process_image import process_image
+from read_boards.process_image import process_image
 
 import constants as consts
 from pid_controller import PIDController
@@ -257,7 +257,7 @@ def main():
     rospy.init_node('robot_controller')
     try:
         mover = Mover()
-        
+
         #Start ScoreBoard
         mover.score_tracker.publish(str(consts.TEAM_ID+","+consts.TEAM_PASSWORD+",0,xxxx"))
 

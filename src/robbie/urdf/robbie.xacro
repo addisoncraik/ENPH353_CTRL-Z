@@ -132,6 +132,8 @@
     <material>Gazebo/Black</material>
   </gazebo>
 
+<<<<<<< HEAD
+=======
   <gazebo reference="imu_link">
     <material>Gazebo/Black</material>
   </gazebo>
@@ -154,14 +156,15 @@
     </plugin>
   </gazebo> -->
 
+>>>>>>> 36b08435cf160f390597a06c3e440f38bc25b921
   <gazebo reference="camera_link">
     <sensor type="depth" name="depth_camera">
       <update_rate>40.0</update_rate>
       <camera name="head">
         <horizontal_fov>1.5</horizontal_fov>
         <image>
-          <width>2160</width>
-          <height>1080</height>
+          <width>3840</width>
+          <height>2160</height>
           <format>R8G8B8</format>
         </image>
         <clip>
