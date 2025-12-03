@@ -71,12 +71,12 @@ def find_clue_boards(img):
         if abs(cx1-cx2) < 50 and abs(cy1-cy2) < 5 and w1 > h1:
             new_points = np.concatenate((new_contour,c2), axis=0)
             new_contour = cv2.convexHull(new_points)
-            contours.remove(c2)
+            # contours.remove(c2)
             continue
         if abs(cx1-cx2) < 5 and abs(cy1-cy2) < 50 and w1 < h1:
             new_points = np.concatenate((new_contour,c2), axis=0)
             new_contour = cv2.convexHull(new_points)
-            contours.remove(c2)
+            # contours.remove(c2)
     
     _,_,nw,nh = cv2.boundingRect(new_contour)
     

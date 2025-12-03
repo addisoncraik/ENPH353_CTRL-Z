@@ -35,12 +35,6 @@ from pid_controller import PIDController
 class Mover:
     def __init__(self):
         
-        #Subscribe to Topics
-        rospy.Subscriber('/Follower/rrbot/camera1/image_raw', Image, self.baby_camera_callback)
-        rospy.Subscriber('/Master/rrbot/camera1/image_raw', Image, self.master_camera_callback)
-        rospy.Subscriber('/Master/rrbot/height', LaserScan, self.height_callback)
-        rospy.Subscriber('/Master/rrbot/camera1/depth/image_raw', Image, self.master_depth_callback)
-
         #Create Publishers
         self.debug_pub = rospy.Publisher("/centering_debug", Vector3, queue_size=1)
         self.pub = rospy.Publisher('/Master/cmd_vel', Twist, queue_size=1)
@@ -79,7 +73,7 @@ class Mover:
 
         self.height_map = None
         self.transformed_height_map = None
-        rospy.sleep(3.0)
+        rospy.sleep(5.0)
 
     def height_callback(self, data):
        valid_ranges = [r for r in data.ranges if r != float('inf')]
@@ -91,17 +85,20 @@ class Mover:
           self.height = -1
 
     def master_depth_callback(self, data):
-        
+        return
+        print("im not tweaking")
         if self.is_master_stable:
+            print("the master is stable")
             return
         
         try:
-            raw_image = self.bridge.imgmsg_to_cv2(data)
+            raw_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
         except CvBridgeError as e:
             rospy.logerr(e)
             return
-        
-        raw_image = cv2.cvtColor(raw_image, cv2.COLOR_RGB2GRAY)
+        cv2.imshow("straight off the bridge", raw_image)
+        cv2.waitKey(1) 
+
 
         self.height_map = raw_image
           
@@ -124,9 +121,9 @@ class Mover:
         if self.first_time_stable is True:
             self.first_time_stable = False
             self.boards, H = find_clue_boards(cv_image)
-            self.transformed_height_map = cv2.warpPerspective(self.height_map, H, (consts.MAP_WIDTH,consts.MAP_HEIGHT))
-            self.transformed_height_map = cv2.Laplacian(self.transformed_height_map,cv2.CV_64F)
-            self.transformed_height_map = cv2.GaussianBlur(self.transformed_height_map,(10,10),0)
+            self.transformed_height_map = self.height_map #cv2.warpPerspective(self.height_map, H, (consts.MAP_WIDTH,consts.MAP_HEIGHT))
+            # self.transformed_height_map = cv2.Laplacian(self.transformed_height_map,cv2.CV_64F)
+            # self.transformed_height_map = cv2.GaussianBlur(self.transformed_height_map,(10,10),0)
 
 
         map, _ = isolate_map(cv_image, int(consts.MAP_WIDTH/consts.SCALE_FACTOR), int(consts.MAP_HEIGHT/consts.SCALE_FACTOR))
@@ -259,15 +256,19 @@ def debugging_visulization(cv_image, dx, dy):
         )
         # Display live with OpenCV (non-blocking)
         #cv2.imshow("Direction", image_with_vector)
-        cv2.waitKey(1)     
+        # cv2.waitKey(1)     
 
 def main():
     rospy.init_node('robot_controller')
     try:
         mover = Mover()
-
+        #Subscribe to Topics
+        rospy.Subscriber('/Follower/rrbot/camera1/image_raw', Image, mover.baby_camera_callback)
+        rospy.Subscriber('/Master/rrbot/camera1/image_raw', Image, mover.master_camera_callback)
+        rospy.Subscriber('/Master/rrbot/height', LaserScan, mover.height_callback)
+        rospy.Subscriber('/Master/rrbot/camera1/depth/image_raw', Image, mover.master_depth_callback)
         #Start ScoreBoard
-        mover.score_tracker.publish(str(consts.TEAM_ID+","+consts.TEAM_PASSWORD+",0,xxxx"))
+        mover.score_tracker.publish(str(consts.TEAM_ID+"," + consts.TEAM_PASSWORD+",0,xxxx"))
 
     except Exception as e:
         rospy.logerr("Failed to initialize Mover: %s", e)

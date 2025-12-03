@@ -137,6 +137,7 @@ class BabyPID:
         height_offset = 0
         if height_map is not None:
             cv2.imshow("Height map", height_map)
+            cv2.waitKey(1)
         if self.at_target == True:
             dz = constants.TARGET_HEIGHT - self.height
         else:
