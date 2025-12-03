@@ -51,4 +51,4 @@ except Exception as e:
     print(e)
     
 
-DEBUG = True
+DEBUG = False

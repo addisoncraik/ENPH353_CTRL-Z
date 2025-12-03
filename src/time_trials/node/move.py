@@ -31,6 +31,7 @@ from read_boards.process_image import process_image
 
 import constants as consts
 from pid_controller import PIDController
+from watchdog import WatchDog
 
 class Mover:
     def __init__(self):
@@ -46,6 +47,7 @@ class Mover:
         self.bridge = CvBridge()
         self.move = Twist()
         self.move_baby = Twist()
+        self.watch_dog = WatchDog(30.0, self.score_tracker)
         self.master_controller = PIDController(pid_constants=(1.5, 0.3, 0.2), imax=10)
 
         #Store Clueboard Locations
@@ -97,13 +99,13 @@ class Mover:
         
         self.height_map = np.clip(raw_image, 0.0, 7.5)
 
-        print(
-            "DEPTH:", 
-            self.height_map.dtype, 
-            "min:", np.min(self.height_map), 
-            "max:", np.max(self.height_map), 
-            "unique:", np.unique(self.height_map)[:10]
-        )
+        # print(
+        #     "DEPTH:", 
+        #     self.height_map.dtype, 
+        #     "min:", np.min(self.height_map), 
+        #     "max:", np.max(self.height_map), 
+        #     "unique:", np.unique(self.height_map)[:10]
+        # )
           
     def master_camera_callback(self, data):
         try:
@@ -135,24 +137,24 @@ class Mover:
 
             # --- Display warped image ---
             disp = cv2.normalize(self.transformed_height_map, None, 0, 1, cv2.NORM_MINMAX)
-            cv2.imshow("trans 1", disp)
-            cv2.waitKey(1)
+            # cv2.imshow("trans 1", disp)
+            # cv2.waitKey(1)
 
             # Laplacian
             lap = cv2.Laplacian(self.transformed_height_map, cv2.CV_64F)
 
             # Display Laplacian nicely
             disp_lap = cv2.normalize(np.abs(lap), None, 0, 1, cv2.NORM_MINMAX)
-            cv2.imshow("laplace", disp_lap)
-            cv2.waitKey(1)
+            # cv2.imshow("laplace", disp_lap)
+            # cv2.waitKey(1)
 
             # Gaussian blur
             blur = cv2.GaussianBlur(lap, (201,201), 0)
 
             # Display blur result
             disp_blur = cv2.normalize(np.abs(blur), None, 0, 1, cv2.NORM_MINMAX)
-            cv2.imshow("blur + laplace", disp_blur)
-            cv2.waitKey(1)
+            # cv2.imshow("blur + laplace", disp_blur)
+            # cv2.waitKey(1)
 
             self.transformed_height_map = cv2.resize(blur, (int(consts.MAP_WIDTH/consts.SCALE_FACTOR), int(consts.MAP_HEIGHT/consts.SCALE_FACTOR)))
             self.transformed_height_map = cv2.normalize(self.transformed_height_map, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
@@ -214,6 +216,8 @@ class Mover:
 
                         self.read = True
                         finished_reading = True
+                        self.watch_dog.feed()
+                        print("dog was fed")
 
                     if consts.DEBUG:
                         print("upper " + upperWord + " lower " + lowerWord)
