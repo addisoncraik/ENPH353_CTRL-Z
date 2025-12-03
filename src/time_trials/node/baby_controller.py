@@ -9,16 +9,27 @@ from sensor_msgs.msg import Imu
 from targeting import is_at_target
 import constants
 from pid_controller import PIDController
+from geometry_msgs.msg import Twist
+
 
 class BabyPID:
     def __init__(self):
         self.baby_controller = PIDController(pid_constants=(1.0, 0.1, 0.002), imax=25)
-        self.roll_pitch_controller = PIDController(pid_constants=(1.5, 0.3, 0.00), imax=2)
+        self.roll_pitch_controller = PIDController(pid_constants=(10.0, 0.1, 0.00), imax=10.0, tuning=False)
         rospy.Subscriber('/Follower/rrbot/height', LaserScan, self.height_callback)
         rospy.Subscriber('/Master/rrbot/height', LaserScan, self.master_height_callback)
         rospy.Subscriber('/Follower/imu', Imu, self.imu_callback)
+
+
+        self.baby_pub = rospy.Publisher('/Follower/cmd_vel', Twist, queue_size=1)
+        self.translational_cmd = Twist()
+        self.angular_cmd = Twist()
+        self.overall_command = Twist()
+
         # State variables
         self.at_target = False
+        self.angular_stability = True
+        self.angular_stability_counter = 0
         self.height = 0.0
         self.master_height = 0.0
         self.last_dz = 0.0
@@ -38,6 +49,14 @@ class BabyPID:
 
         roll = euler[0]
         pitch = euler[1]
+        if (roll**2 + pitch**2) > 0.1:
+            self.angular_stability_counter = 20
+            self.angular_stability = False
+        elif self.angular_stability_counter > 0:
+            self.angular_stability_counter -= 1
+        else:
+            self.angular_stability = True
+
         # Get level errors
         roll_error  = 0 - roll
         pitch_error = 0 - pitch
@@ -48,9 +67,25 @@ class BabyPID:
         # Apply to actuators CORRECTLY
         self.wx = -roll_cmd     # roll actuator
         self.wy = -pitch_cmd    # pitch actuator
-        print("roll: " + str(roll) + " pitch: " + str(pitch))
-        print("response: roll: " + str(roll_cmd) + " pitc: " + str(pitch_cmd))
+        # print("roll: " + str(roll) + " pitch: " + str(pitch))
+        # print("response: roll: " + str(roll_cmd) + " pitc: " + str(pitch_cmd))
+        self.angular_cmd.angular.x = self.wx
+        self.angular_cmd.angular.y = self.wy
+        self.publish()
 
+
+    def publish(self):
+        self.overall_command.angular = self.angular_cmd.angular
+        if self.angular_stability is True:
+            self.overall_command.linear = self.translational_cmd.linear
+            self.overall_command.angular.z = self.translational_cmd.angular.z
+        else:
+            self.overall_command.linear.x = 0
+            self.overall_command.linear.y = 0
+            self.overall_command.linear.z = 0
+            self.overall_command.angular.z = 0
+
+        self.baby_pub.publish(self.overall_command)
 
 
     def height_callback(self, data):
@@ -119,7 +154,12 @@ class BabyPID:
         drone_vy = world_vx * np.sin(angle) - world_vy * np.cos(angle)
         
         self.visualizeCommand(image, babyDrone, (drone_vx, drone_vy), target, target_angle)
-        
+
+        self.translational_cmd.linear.x = drone_vx
+        self.translational_cmd.linear.y = drone_vy
+        self.translational_cmd.linear.z = drone_vz
+        self.translational_cmd.angular.z = world_rot
+        self.publish()
         return [drone_vx, drone_vy, world_rot, drone_vz]
 
     def visualizeCommand(self, image, baby_pos, baby_cmd, target, target_angle):

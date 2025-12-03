@@ -5,6 +5,11 @@
          name="BALLIN" 
          output="screen">
    </node>
+   <!--baby velocity multiplexer-->
+   <node pkg="time_trials"
+      type="vel_mux.py"
+      name="vel_mux"
+      output="screen"/>
    <!-- Launch The Master -->
 	<group ns="Master">
 		<param name="tf_prefix" value="Master_tf" />
