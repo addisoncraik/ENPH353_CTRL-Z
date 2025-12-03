@@ -1,6 +1,7 @@
 import numpy as np
 import rospy
 from dynamic_reconfigure.server import Server
+from time_trials.cfg import CenteringPIDConfig
 
 class PIDController:
     def __init__(self, pid_constants, imax, derivative_low_pass=1.0, integral_leak=1.0, tuning=False):

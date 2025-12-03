@@ -70,9 +70,8 @@ class Mover:
         self.number_stable_frames = 0
         self.stable_baby_frames = 0
         self.baby_is_stable = False
-        self.baby_recovery_count = 0
         self.first_time_stable = True
-        rospy.sleep(1.0)
+        rospy.sleep(3.0)
 
     def height_callback(self, data):
        valid_ranges = [r for r in data.ranges if r != float('inf')]
@@ -92,14 +91,7 @@ class Mover:
 
         # stabilize the master from its lookout point
         self.stabilize_master(cv_image)
-        if self.is_master_stable is not True or self.is_baby_flipped():
-            self.move_baby.linear.x = 0
-            self.move_baby.linear.y = 0
-            self.move_baby.linear.z = 0
-            self.move_baby.angular.z = 0
-            self.move_baby.angular.x = self.baby.wx
-            self.move_baby.angular.y = self.baby.wy
-            self.baby_pub.publish(self.move_baby)
+        if self.is_master_stable is not True:
             return
         # If the master has just stabilized itself at its lookout, find the clue boards
         if self.first_time_stable is True:
@@ -119,14 +111,7 @@ class Mover:
         self.process_target(board, target)
 
         # Find and go to the nearest target
-        baby_vx, baby_vy, baby_angularz, baby_vz = self.baby.calculate_action(babyDrone, target, board, map)
-        self.move_baby.linear.x = baby_vx
-        self.move_baby.linear.y = baby_vy 
-        self.move_baby.linear.z = baby_vz
-        self.move_baby.angular.z = baby_angularz
-        self.move_baby.angular.x = self.baby.wx
-        self.move_baby.angular.y = self.baby.wy
-        self.baby_pub.publish(self.move_baby)
+        self.baby.calculate_action(babyDrone, target, board, map)
         self.prev_baby_location = babyDrone
         
     def stabilize_master(self, cv_image):
@@ -188,15 +173,6 @@ class Mover:
         self.number_stable_frames += 1
         if self.number_stable_frames > 100:
             self.is_master_stable = True
-    
-    def is_baby_flipped(self):
-        if (self.baby.wx**2 + self.baby.wy**2) < 0.05:
-            self.baby_recovery_count = 100
-            return False
-        elif self.baby_recovery_count > 0:
-            self.baby_recovery_count -= 1
-        else:
-            return True
     
     def process_target(self, board, target):
         tolerance = 0.25
