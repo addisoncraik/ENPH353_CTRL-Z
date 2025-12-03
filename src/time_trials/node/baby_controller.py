@@ -15,7 +15,7 @@ from geometry_msgs.msg import Twist
 class BabyPID:
     def __init__(self):
         self.baby_controller = PIDController(pid_constants=(1.0, 0.1, 0.002), imax=25)
-        self.roll_pitch_controller = PIDController(pid_constants=(10.0, 0.1, 0.00), imax=10.0, tuning=False)
+        self.roll_pitch_controller = PIDController(pid_constants=(10.0, 1.0, 0.00), imax=10.0, tuning=False)
         rospy.Subscriber('/Follower/rrbot/height', LaserScan, self.height_callback)
         rospy.Subscriber('/Master/rrbot/height', LaserScan, self.master_height_callback)
         rospy.Subscriber('/Follower/imu', Imu, self.imu_callback)
