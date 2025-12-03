@@ -4,6 +4,7 @@ import rospy
 from geometry_msgs.msg import Twist, Vector3
 from std_msgs.msg import String
 from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import Imu
 
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
@@ -95,6 +96,8 @@ class Mover:
             self.move_baby.linear.y = 0
             self.move_baby.linear.z = 0
             self.move_baby.angular.z = 0
+            self.move_baby.angular.x = self.baby.wx
+            self.move_baby.angular.y = self.baby.wy
             self.baby_pub.publish(self.move_baby)
             return
         # If the master has just stabilized itself at its lookout, find the clue boards
@@ -118,8 +121,10 @@ class Mover:
         baby_vx, baby_vy, baby_angularz, baby_vz = self.baby.calculate_action(babyDrone, target, board, map)
         self.move_baby.linear.x = baby_vx
         self.move_baby.linear.y = baby_vy 
-        self.move_baby.angular.z = baby_angularz
         self.move_baby.linear.z = baby_vz
+        self.move_baby.angular.z = baby_angularz
+        self.move_baby.angular.x = self.baby.wx
+        self.move_baby.angular.y = self.baby.wy
         self.baby_pub.publish(self.move_baby)
         self.prev_baby_location = babyDrone
         
@@ -199,6 +204,7 @@ class Mover:
             return
         self.stable_baby_frames = 0
         self.baby_is_stable = True
+        
         print("baby has stabilized")
         
         for element in self.boards[:]:
@@ -239,7 +245,7 @@ def main():
     rospy.init_node('robot_controller')
     try:
         mover = Mover()
-        
+
         #Start ScoreBoard
         mover.score_tracker.publish(str(consts.TEAM_ID+","+consts.TEAM_PASSWORD+",0,xxxx"))
 
