@@ -107,7 +107,7 @@ class BabyPID:
             self.master_height = 0.0
 
 
-    def calculate_action(self, babyDrone, target, board, image):
+    def calculate_action(self, babyDrone, target, board, image, height_map=None):
         cx, cy, angle = babyDrone
         if target is None:
             return [0.0, 0.0, 0.0]
@@ -134,6 +134,9 @@ class BabyPID:
         
         dz = 0
         self.at_target = is_at_target((cx_mod, cy_mod, angle), (tx_centered, ty_centered))
+        height_offset = 0
+        if height_map is not None:
+            cv2.imshow("Height map", height_map)
         if self.at_target == True:
             dz = constants.TARGET_HEIGHT - self.height
         else:
