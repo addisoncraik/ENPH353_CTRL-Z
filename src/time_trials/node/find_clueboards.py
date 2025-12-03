@@ -14,7 +14,7 @@ def find_clue_boards(img):
 
   # --- 1. Isolate Map ---
   # Make large map so we can pick out all the time details
-  map_img = isolate_map(img, consts.MAP_WIDTH, consts.MAP_HEIGHT)
+  map_img, H = isolate_map(img, consts.MAP_WIDTH, consts.MAP_HEIGHT)
 
 
   # --- 2. Define Target Color and Tolerance ---
@@ -128,4 +128,4 @@ def find_clue_boards(img):
   debug = cv2.resize(debug, (int(consts.MAP_WIDTH/consts.SCALE_FACTOR),int(consts.MAP_HEIGHT/consts.SCALE_FACTOR)))
   cv2.imshow("Clueboards Found", debug)
   
-  return all_boards
+  return all_boards, H

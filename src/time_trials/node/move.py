@@ -39,6 +39,7 @@ class Mover:
         rospy.Subscriber('/Follower/rrbot/camera1/image_raw', Image, self.baby_camera_callback)
         rospy.Subscriber('/Master/rrbot/camera1/image_raw', Image, self.master_camera_callback)
         rospy.Subscriber('/Master/rrbot/height', LaserScan, self.height_callback)
+        rospy.Subscriber('/Master/rrbot/camera1/depth/image_raw', Image, self.master_depth_callback)
 
         #Create Publishers
         self.debug_pub = rospy.Publisher("/centering_debug", Vector3, queue_size=1)
@@ -74,6 +75,10 @@ class Mover:
         self.stable_baby_frames = 0
         self.baby_is_stable = False
         self.first_time_stable = True
+
+
+        self.height_map = None
+        self.transformed_height_map = None
         rospy.sleep(3.0)
 
     def height_callback(self, data):
@@ -84,6 +89,21 @@ class Mover:
           self.height = avg_height
        else:
           self.height = -1
+
+    def master_depth_callback(self, data):
+        
+        if self.is_master_stable:
+            return
+        
+        try:
+            raw_image = self.bridge.imgmsg_to_cv2(data)
+        except CvBridgeError as e:
+            rospy.logerr(e)
+            return
+        
+        raw_image = cv2.cvtColor(raw_image, cv2.COLOR_RGB2GRAY)
+
+        self.height_map = raw_image
           
     def master_camera_callback(self, data):
         try:
@@ -103,9 +123,13 @@ class Mover:
         # If the master has just stabilized itself at its lookout, find the clue boards
         if self.first_time_stable is True:
             self.first_time_stable = False
-            self.boards = find_clue_boards(cv_image)
+            self.boards, H = find_clue_boards(cv_image)
+            self.transformed_height_map = cv2.warpPerspective(self.height_map, H, (consts.MAP_WIDTH,consts.MAP_HEIGHT))
+            self.transformed_height_map = cv2.Laplacian(self.transformed_height_map,cv2.CV_64F)
+            self.transformed_height_map = cv2.GaussianBlur(self.transformed_height_map,(10,10),0)
 
-        map = isolate_map(cv_image, int(consts.MAP_WIDTH/consts.SCALE_FACTOR), int(consts.MAP_HEIGHT/consts.SCALE_FACTOR))
+
+        map, _ = isolate_map(cv_image, int(consts.MAP_WIDTH/consts.SCALE_FACTOR), int(consts.MAP_HEIGHT/consts.SCALE_FACTOR))
         if consts.DEBUG is True:
             rgb_map = cv2.cvtColor(map, cv2.COLOR_BGR2RGB)
             # cv2.imshow("map", rgb_map)
@@ -118,7 +142,7 @@ class Mover:
         self.process_target(board, target)
 
         # Find and go to the nearest target
-        self.baby.calculate_action(babyDrone, target, board, map)
+        self.baby.calculate_action(babyDrone, target, board, map, self.transformed_height_map)
         self.prev_baby_location = babyDrone
         
     def stabilize_master(self, cv_image):

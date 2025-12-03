@@ -57,4 +57,4 @@ def isolate_map(camera_feed, map_width, map_height):
 
     # make transformation matrix
     M = cv2.getPerspectiveTransform(src, dest)
-    return cv2.warpPerspective(camera_feed, M, (map_width, map_height))
+    return cv2.warpPerspective(camera_feed, M, (map_width, map_height)), M
