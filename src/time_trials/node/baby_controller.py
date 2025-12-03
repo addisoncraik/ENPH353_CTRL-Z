@@ -134,15 +134,14 @@ class BabyPID:
         
         dz = 0
         self.at_target = is_at_target((cx_mod, cy_mod, angle), (tx_centered, ty_centered))
-        height_offset = 0
+        height_scaling = 0
         if height_map is not None:
-            cv2.imshow("Height map", height_map)
-            cv2.waitKey(1)
+            height_scaling = height_map[cy, cx]
         if self.at_target == True:
             dz = constants.TARGET_HEIGHT - self.height
         else:
-            cruise_altitude = self.calculateCruiseAltitude(babyDrone)
-            dz = cruise_altitude - self.height
+            # cruise_altitude = self.calculateCruiseAltitude(babyDrone)
+            dz = constants.CRUISE_ALTITUDE + 3*height_scaling - self.height
         self.last_dz = dz
         # Heading correction (same as before)
         bx, by = board

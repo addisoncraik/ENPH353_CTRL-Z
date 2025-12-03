@@ -85,22 +85,25 @@ class Mover:
           self.height = -1
 
     def master_depth_callback(self, data):
-        return
-        print("im not tweaking")
         if self.is_master_stable:
-            print("the master is stable")
             return
         
         try:
-            raw_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
+            raw_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="passthrough")
         except CvBridgeError as e:
             rospy.logerr(e)
-            return
-        cv2.imshow("straight off the bridge", raw_image)
-        cv2.waitKey(1) 
+            return 
 
+        
+        self.height_map = np.clip(raw_image, 0.0, 7.5)
 
-        self.height_map = raw_image
+        print(
+            "DEPTH:", 
+            self.height_map.dtype, 
+            "min:", np.min(self.height_map), 
+            "max:", np.max(self.height_map), 
+            "unique:", np.unique(self.height_map)[:10]
+        )
           
     def master_camera_callback(self, data):
         try:
@@ -121,9 +124,39 @@ class Mover:
         if self.first_time_stable is True:
             self.first_time_stable = False
             self.boards, H = find_clue_boards(cv_image)
-            self.transformed_height_map = self.height_map #cv2.warpPerspective(self.height_map, H, (consts.MAP_WIDTH,consts.MAP_HEIGHT))
-            # self.transformed_height_map = cv2.Laplacian(self.transformed_height_map,cv2.CV_64F)
-            # self.transformed_height_map = cv2.GaussianBlur(self.transformed_height_map,(10,10),0)
+            # self.transformed_height_map =cv2.warpPerspective(self.height_map, H, (consts.MAP_WIDTH,consts.MAP_HEIGHT))
+            # Warp
+            self.transformed_height_map = cv2.warpPerspective(
+                self.height_map, H,
+                (consts.MAP_WIDTH, consts.MAP_HEIGHT)
+            )
+
+            self.transformed_height_map = self.transformed_height_map.astype(np.float64)
+
+            # --- Display warped image ---
+            disp = cv2.normalize(self.transformed_height_map, None, 0, 1, cv2.NORM_MINMAX)
+            cv2.imshow("trans 1", disp)
+            cv2.waitKey(1)
+
+            # Laplacian
+            lap = cv2.Laplacian(self.transformed_height_map, cv2.CV_64F)
+
+            # Display Laplacian nicely
+            disp_lap = cv2.normalize(np.abs(lap), None, 0, 1, cv2.NORM_MINMAX)
+            cv2.imshow("laplace", disp_lap)
+            cv2.waitKey(1)
+
+            # Gaussian blur
+            blur = cv2.GaussianBlur(lap, (201,201), 0)
+
+            # Display blur result
+            disp_blur = cv2.normalize(np.abs(blur), None, 0, 1, cv2.NORM_MINMAX)
+            cv2.imshow("blur + laplace", disp_blur)
+            cv2.waitKey(1)
+
+            self.transformed_height_map = cv2.resize(blur, (int(consts.MAP_WIDTH/consts.SCALE_FACTOR), int(consts.MAP_HEIGHT/consts.SCALE_FACTOR)))
+            self.transformed_height_map = cv2.normalize(self.transformed_height_map, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+
 
 
         map, _ = isolate_map(cv_image, int(consts.MAP_WIDTH/consts.SCALE_FACTOR), int(consts.MAP_HEIGHT/consts.SCALE_FACTOR))
@@ -194,7 +227,7 @@ class Mover:
         
     def check_master_stability(self, dx, dy):
         # verify that the magnitude of the error function has remained below a threshold
-        if (dx**2 + dy**2) > 1:
+        if (dx**2 + dy**2) > 10:
             self.number_stable_frames = 0
             self.is_master_stable = False
             return

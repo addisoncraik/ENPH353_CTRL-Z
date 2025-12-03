@@ -107,7 +107,7 @@
   <joint name="lidar_joint" type="fixed">
     <parent link="chassis"/>
     <child link="lidar_link"/>
-    <origin xyz="0 0.02 -${chassis_height/4+0.01}" rpy="0 1.5708 0"/>
+    <origin xyz="${chassis_length/2} 0.02 -${chassis_height/4}" rpy="0 1.5708 0"/>
   </joint>
 
   <joint name="imu_joint" type="fixed">
