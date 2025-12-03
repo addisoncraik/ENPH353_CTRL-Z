@@ -47,7 +47,7 @@ class Mover:
         self.bridge = CvBridge()
         self.move = Twist()
         self.move_baby = Twist()
-        self.watch_dog = WatchDog(30.0, self.score_tracker)
+        self.watch_dog = WatchDog(25.0, self.score_tracker)
         self.master_controller = PIDController(pid_constants=(1.5, 0.3, 0.2), imax=10)
 
         #Store Clueboard Locations
