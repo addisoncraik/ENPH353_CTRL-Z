@@ -140,7 +140,6 @@ class Mover:
             # cv2.imshow("trans 1", disp)
             # cv2.waitKey(1)
 
-            # Laplacian
             lap = cv2.Laplacian(self.transformed_height_map, cv2.CV_64F)
 
             # Display Laplacian nicely
