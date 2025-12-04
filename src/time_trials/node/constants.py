@@ -14,8 +14,8 @@ TARGET_HEIGHT = 0.2 #measured in meters
 
 CRUISE_ALTITUDE = 0.5 #measured in meters
 
-CHAR_WIDTH = 100
-CHAR_HEIGHT = 145
+CHAR_WIDTH = 50
+CHAR_HEIGHT = 80
 
 CLUEBOARD_WIDTH = 500
 CLUEBOARD_HEIGHT = 350
@@ -34,7 +34,7 @@ DICTIONARY = {
     "BANDIT":"8"
 }
 
-MODEL_PATH = '/home/fizzer/competition_ws/src/time_trials/node/read_boards/clue_character_model_v6.tflite' #Need to Upload this file or change to your own
+MODEL_PATH = '/home/fizzer/ros_ws/src/time_trials/node/read_boards/clue_character_model.tflite' #Need to Upload this file or change to your own
 
 try:
     CNN_MODEL = tf.lite.Interpreter(model_path=MODEL_PATH)

@@ -30,7 +30,7 @@ def read_single_char_cnn(char_image):
   predicted_index = np.argmax(prediction_probs)
 
   # Standard mapping for model (A-Z)
-  ALPHANUMERIC_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  ALPHANUMERIC_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
   if predicted_index < len(ALPHANUMERIC_CHARS):
       return ALPHANUMERIC_CHARS[predicted_index]
