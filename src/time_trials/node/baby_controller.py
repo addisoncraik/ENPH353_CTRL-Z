@@ -119,7 +119,7 @@ class BabyPID:
         # adjust for parrallel axis
         delta_x = 0
         delta_y = 0
-        if self.master_height != 0.0:
+        if self.master_height != 0.0 and cx_centered > 0:
             delta_x = self.height / self.master_height * cx_centered
             delta_y = self.height / self.master_height * cy_centered 
         
