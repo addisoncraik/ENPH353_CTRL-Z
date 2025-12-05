@@ -47,10 +47,16 @@ class BabyPID:
             orientation.z,
             orientation.w
         )
-        euler = tf.transformations.euler_from_quaternion(quaternion)
+            # Desired orientation = level (no roll, no pitch)
+        q_des = np.array([0.0, 0.0, 0.0, 1.0])
 
-        roll = euler[0]
-        pitch = euler[1]
+        # Quaternion error
+        q_err = tf.transformations.quaternion_multiply(q_des, tf.transformations.quaternion_conjugate(quaternion))
+
+        # Small angle error vector
+        angle_error = 2.0 * np.array(q_err[0:3])
+        roll = angle_error[0]
+        pitch = angle_error[1]
         if (roll**2 + pitch**2) > 0.1:
             self.angular_stability_counter = 20
             self.angular_stability = False
@@ -59,12 +65,8 @@ class BabyPID:
         else:
             self.angular_stability = True
 
-        # Get level errors
-        roll_error  = 0 - roll
-        pitch_error = 0 - pitch
-
         # PID
-        roll_cmd, pitch_cmd, _ = self.roll_pitch_controller.PID((roll_error, pitch_error, 0))
+        roll_cmd, pitch_cmd, _ = self.roll_pitch_controller.PID((roll, pitch, 0))
 
         # Apply to actuators CORRECTLY
         self.wx = -roll_cmd     # roll actuator

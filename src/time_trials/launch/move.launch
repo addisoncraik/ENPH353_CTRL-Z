@@ -5,11 +5,6 @@
          name="BALLIN" 
          output="screen">
    </node>
-   <!--baby velocity multiplexer-->
-   <node pkg="time_trials"
-      type="vel_mux.py"
-      name="vel_mux"
-      output="screen"/>
    <!-- Launch The Master -->
 	<group ns="Master">
 		<param name="tf_prefix" value="Master_tf" />
@@ -20,8 +15,6 @@
 			<arg name="lidar_samples" value="50"/>
 			<arg name="lidar_angle" value="0.01"/>
 		</include>
-		<!-- Add teleop_keyboard controller -->
-		<!-- <include file="$(find enph353_utils)/launch/desktop.launch"/> -->
 	</group>
 
       <!-- Launch The Follower -->
@@ -34,8 +27,8 @@
 			<arg name="lidar_samples" value="100"/>
 			<arg name="lidar_angle" value="0.5"/>
 		</include>
-		<!-- Add teleop_keyboard controller -->
-		<!-- <include file="$(find enph353_utils)/launch/desktop.launch"/> -->
 	</group>
+
+	<!-- <include file="$(find imu_tools)/imu_complementary_filter/launch/complementary_filter.launch"/> -->
 
 </launch>

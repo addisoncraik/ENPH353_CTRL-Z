@@ -48,9 +48,11 @@ class Mover:
         self.move = Twist()
         self.move_baby = Twist()
         self.watch_dog = WatchDog(consts.WATCHDOG_TIMEOUT_PERIOD, self.score_tracker)
+        self.watch_dog = WatchDog(consts.WATCHDOG_TIMEOUT_PERIOD, self.score_tracker)
         self.master_controller = PIDController(pid_constants=(1.5, 0.3, 0.2), imax=10)
 
         #Store Clueboard Locations
+        self.boards = None
         self.boards = None
         
         #Track Height

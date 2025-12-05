@@ -15,7 +15,6 @@ def find_babyDrone(map, last_pos):
     msk = cv2.inRange(hsl_map, lower_bound, upper_bound)
 
     contours, _ = cv2.findContours(msk, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    # cv2.imshow("ballin", msk)
     try:
         max_contour = max(contours, key=cv2.contourArea)
     except:
@@ -36,7 +35,6 @@ def find_babyDrone(map, last_pos):
 
     mask = cv2.inRange(map, lower_bound, upper_bound)
     contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    # cv2.imshow("PART TWO BABYYYY", mask)
     try:
         max_contour = max(contours, key=cv2.contourArea)
     except:
