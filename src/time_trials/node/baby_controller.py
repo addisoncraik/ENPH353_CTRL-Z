@@ -142,8 +142,7 @@ class BabyPID:
         if self.at_target == True:
             dz = constants.TARGET_HEIGHT - self.height
         else:
-            # cruise_altitude = self.calculateCruiseAltitude(babyDrone)
-            dz = constants.CRUISE_ALTITUDE + 4*height_scaling - self.height
+            dz = constants.CRUISE_ALTITUDE + height_scaling - self.height
         self.last_dz = dz
         # Heading correction (same as before)
         bx, by = board

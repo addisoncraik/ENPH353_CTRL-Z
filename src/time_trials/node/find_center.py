@@ -57,22 +57,7 @@ def find_course_center(image):
   total_pixels = white_pixels + black_pixels
   if total_pixels > 0:
     ratio_white_to_total = white_pixels / total_pixels
-
-    # if (ratio_white_to_total < 0.40):
-    #   dz = 0
-    # else:
+    # this dictates how high the master flies
     dz = 10 * (ratio_white_to_total - 0.4)
-    # Define thresholds for vertical adjustment
-    # These thresholds might need tuning based on actual drone height and field of view
-    too_low_threshold = 0.70 # If course takes up > 90% of frame, drone is too low
-    too_high_threshold = 0.60 # If course takes up < 60% of frame (showing too much black background), drone is too high
-    #dz should be < 0 if ratio is small. it should be big (up) when ratio is high
-    
-    # if ratio_white_to_total > too_low_threshold: # Course is occupying too much of the image (drone is too low)
-    #   dz = 1 # Move up
-    # elif ratio_white_to_total < too_high_threshold: # Course is occupying too little of the image (drone is too high)
-    #   dz = -1 # Move down
-    # else:
-    #   dz = 0 # Optimal height
 
   return dx, dy, dz
