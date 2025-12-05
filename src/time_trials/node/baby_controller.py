@@ -50,7 +50,7 @@ class BabyPID:
         q_des = np.array([0.0, 0.0, 0.0, 1.0])
 
         # Quaternion error
-        q_err = tf4.quaternion_multiply(q_des, tf4.quaternion_conjugate(q))
+        q_err = tf.transformations.quaternion_multiply(q_des, tf.transformations.quaternion_conjugate(quaternion))
 
         # Small angle error vector
         angle_error = 2.0 * np.array(q_err[0:3])
