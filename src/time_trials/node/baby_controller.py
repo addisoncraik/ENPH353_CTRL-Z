@@ -39,6 +39,7 @@ class BabyPID:
         self.cruise_altitude = 0.5
 
     def imu_callback(self, msg):
+        return
         orientation = msg.orientation
         quaternion = (
             orientation.x,
@@ -118,7 +119,7 @@ class BabyPID:
         # adjust for parrallel axis
         delta_x = 0
         delta_y = 0
-        if self.master_height != 0.0 and cx_centered > 0:
+        if self.master_height != 0.0:
             delta_x = self.height / self.master_height * cx_centered
             delta_y = self.height / self.master_height * cy_centered 
         
@@ -140,10 +141,17 @@ class BabyPID:
         if self.at_target == True:
             dz = constants.TARGET_HEIGHT - self.height
         else:
-            # cruise_altitude = self.calculateCruiseAltitude(babyDrone)
-            dz = constants.CRUISE_ALTITUDE + 3*height_scaling - self.height
+            dz = constants.CRUISE_ALTITUDE + height_scaling - self.height
         self.last_dz = dz
-        # Heading correction (same as before)
+        Kz = 2.0
+        drone_vz = Kz * dz
+        # if abs(dz) > constants.BABY_HEIGHT_TOLERANCE:
+        #     self.translational_cmd.linear.x = 0
+        #     self.translational_cmd.linear.y = 0
+        #     self.translational_cmd.linear.z = drone_vz
+        #     self.translational_cmd.angular.z = 0
+        #     return
+
         bx, by = board
         target_angle = math.atan2(by - cy, bx - cx)
 
@@ -157,8 +165,7 @@ class BabyPID:
         
         world_vx, world_vy, world_rot = self.baby_controller.PID((dx, dy, angle_error))
 
-        Kz = 2.0
-        drone_vz = Kz * dz
+        
         drone_vx = world_vx * np.cos(angle) + world_vy * np.sin(angle)
         drone_vy = world_vx * np.sin(angle) - world_vy * np.cos(angle)
         
@@ -225,26 +232,6 @@ class BabyPID:
         # Display live with OpenCV (non-blocking)
         cv2.imshow("Baby Controller", image_with_vector)
         cv2.waitKey(1)
-
-
-    # TODO this is so cooked hopefully camera inverse transform eliminates this
-    def calculateCruiseAltitude(self, baby_drone):
-        x, y, _ = baby_drone
-        cx = (constants.MAP_WIDTH/constants.SCALE_FACTOR)/2
-        cy = (constants.MAP_HEIGHT/constants.SCALE_FACTOR)/2
-        x_c = x - cx
-        y_c = y - cy
-        # print("current pos x_c,y_c " + str(x_c) + ',' + str(y_c))
-        if x < 600 or x > 990:
-            # print("cruise altitude of 0.5")
-            return 0.5
-        elif y > 400: 
-            return 0.5
-        # elif x > 600 and x < 700:
-        #     return 4
-        else:
-            # print("cruse altitude of 2")
-            return 2
 
 def center_points(x,y):
     cx = (constants.MAP_WIDTH/constants.SCALE_FACTOR)/2

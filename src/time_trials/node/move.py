@@ -47,13 +47,11 @@ class Mover:
         self.bridge = CvBridge()
         self.move = Twist()
         self.move_baby = Twist()
-        self.watch_dog = WatchDog(25.0, self.score_tracker)
+        self.watch_dog = WatchDog(consts.WATCHDOG_TIMEOUT_PERIOD, self.score_tracker)
         self.master_controller = PIDController(pid_constants=(1.5, 0.3, 0.2), imax=10)
 
         #Store Clueboard Locations
-        self.boards = [
-            [(500,250), [(490, 250), (510, 250)]]
-            ]
+        self.boards = None
         
         #Track Height
         self.height = -1
@@ -75,7 +73,7 @@ class Mover:
 
         self.height_map = None
         self.transformed_height_map = None
-        rospy.sleep(5.0)
+        rospy.sleep(1.0)
 
     def height_callback(self, data):
        valid_ranges = [r for r in data.ranges if r != float('inf')]
@@ -96,16 +94,8 @@ class Mover:
             rospy.logerr(e)
             return 
 
-        
-        self.height_map = np.clip(raw_image, 0.0, 7.5)
+        self.height_map = np.clip(raw_image, 0.0, consts.MASTER_DRONE_HEIGHT)
 
-        # print(
-        #     "DEPTH:", 
-        #     self.height_map.dtype, 
-        #     "min:", np.min(self.height_map), 
-        #     "max:", np.max(self.height_map), 
-        #     "unique:", np.unique(self.height_map)[:10]
-        # )
           
     def master_camera_callback(self, data):
         try:
@@ -137,34 +127,35 @@ class Mover:
 
             # --- Display warped image ---
             disp = cv2.normalize(self.transformed_height_map, None, 0, 1, cv2.NORM_MINMAX)
-            # cv2.imshow("trans 1", disp)
-            # cv2.waitKey(1)
 
-            # Laplacian
             lap = cv2.Laplacian(self.transformed_height_map, cv2.CV_64F)
 
             # Display Laplacian nicely
             disp_lap = cv2.normalize(np.abs(lap), None, 0, 1, cv2.NORM_MINMAX)
-            # cv2.imshow("laplace", disp_lap)
-            # cv2.waitKey(1)
 
             # Gaussian blur
             blur = cv2.GaussianBlur(lap, (201,201), 0)
 
             # Display blur result
             disp_blur = cv2.normalize(np.abs(blur), None, 0, 1, cv2.NORM_MINMAX)
-            # cv2.imshow("blur + laplace", disp_blur)
-            # cv2.waitKey(1)
+
+
+            if consts.DEBUG:
+                cv2.imshow("trans 1", disp)
+                cv2.imshow("laplace", disp_lap)
+                cv2.imshow("blur + laplace", disp_blur)
+                cv2.waitKey(1)
 
             self.transformed_height_map = cv2.resize(blur, (int(consts.MAP_WIDTH/consts.SCALE_FACTOR), int(consts.MAP_HEIGHT/consts.SCALE_FACTOR)))
-            self.transformed_height_map = cv2.normalize(self.transformed_height_map, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+            self.transformed_height_map = cv2.normalize(self.transformed_height_map, None, alpha=0, beta=consts.MOUNTAIN_OFFSET, norm_type=cv2.NORM_MINMAX)
 
 
 
         map, _ = isolate_map(cv_image, int(consts.MAP_WIDTH/consts.SCALE_FACTOR), int(consts.MAP_HEIGHT/consts.SCALE_FACTOR))
         if consts.DEBUG is True:
             rgb_map = cv2.cvtColor(map, cv2.COLOR_BGR2RGB)
-            # cv2.imshow("map", rgb_map)
+            cv2.imshow("map", rgb_map)
+            cv2.waitKey(1)
 
         # Find the baby drone
         babyDrone = find_babyDrone(map, self.prev_baby_location)
@@ -207,8 +198,6 @@ class Mover:
 
             while (not finished_reading and count < 10):
                 upperWord, lowerWord = process_image(cv_image)
-                # TODO this is not what its reading
-                #upperWord, lowerWord = "rain", "coat"
                 if upperWord is not None and lowerWord is not None:
 
                     if upperWord in consts.DICTIONARY:
@@ -231,30 +220,29 @@ class Mover:
         
     def check_master_stability(self, dx, dy):
         # verify that the magnitude of the error function has remained below a threshold
-        if (dx**2 + dy**2) > 10:
+        if (dx**2 + dy**2) > consts.MASTER_PIXEL_REGION:
             self.number_stable_frames = 0
             self.is_master_stable = False
             return
         self.number_stable_frames += 1
-        if self.number_stable_frames > 100:
+        if self.number_stable_frames > consts.MASTER_FRAMES_STABLE:
             self.is_master_stable = True
     
     def process_target(self, board, target):
-        tolerance = 0.25
         if self.read is True:
             for element in self.boards:
                 if element[0] == board and (len(element[1]) == 1 or len(element[1]) == 0):
                     self.boards.remove(element)
             self.read = False
             print("Clue Submitted, Board removed")
-        # TODO this logic is a bit brokey
-        if self.baby.at_target is False or abs(self.baby.last_dz - consts.TARGET_HEIGHT) >= tolerance or self.baby.aligned_with_target is False:
-            #print("dz error " + str(self.baby.last_dz - consts.TARGET_HEIGHT))
+        print(str(self.baby.last_dz))
+        if self.baby.at_target is False or abs(self.baby.last_dz) >= consts.BABY_HEIGHT_TOLERANCE or self.baby.aligned_with_target is False:
             self.stable_baby_frames = 0
             return
 
         self.stable_baby_frames += 1
-        if self.stable_baby_frames < 25:
+        print("stable baby frame++")
+        if self.stable_baby_frames < consts.BABY_FRAMES_AT_CLUEBOARD:
             return
         self.stable_baby_frames = 0
         self.baby_is_stable = True
