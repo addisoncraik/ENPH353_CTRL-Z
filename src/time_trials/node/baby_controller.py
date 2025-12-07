@@ -39,7 +39,7 @@ class BabyPID:
         self.cruise_altitude = 0.5
 
     def imu_callback(self, msg):
-        return
+        #return
         orientation = msg.orientation
         quaternion = (
             orientation.x,
@@ -47,16 +47,15 @@ class BabyPID:
             orientation.z,
             orientation.w
         )
-            # Desired orientation = level (no roll, no pitch)
-        q_des = np.array([0.0, 0.0, 0.0, 1.0])
 
-        # Quaternion error
-        q_err = tf.transformations.quaternion_multiply(q_des, tf.transformations.quaternion_conjugate(quaternion))
+        euler = tf.transformations.euler_from_quaternion(quaternion)
 
-        # Small angle error vector
-        angle_error = 2.0 * np.array(q_err[0:3])
-        roll = angle_error[0]
-        pitch = angle_error[1]
+        roll = euler[0]
+        pitch = euler[1]
+        yaw = euler[2]
+
+        #Stability Check
+
         if (roll**2 + pitch**2) > 0.1:
             self.angular_stability_counter = 20
             self.angular_stability = False
@@ -64,13 +63,23 @@ class BabyPID:
             self.angular_stability_counter -= 1
         else:
             self.angular_stability = True
+        
+        #Raw Error
+        roll_error = 0 - roll
+        pitch_error = 0 - pitch
 
-        # PID
-        roll_cmd, pitch_cmd, _ = self.roll_pitch_controller.PID((roll, pitch, 0))
+        
+        roll_cmd, pitch_cmd, _ = self.roll_pitch_controller.PID((roll_error,pitch_error,0))
 
-        # Apply to actuators CORRECTLY
-        self.wx = -roll_cmd     # roll actuator
-        self.wy = -pitch_cmd    # pitch actuator
+        c = math.cos(yaw)
+        s = math.sin(yaw)
+
+        body_roll_cmd = roll_cmd*c + pitch_cmd*s
+        body_pitch_cmd = -roll_cmd*s + pitch_cmd*c
+
+        # Desired orientation = level (no roll, no pit
+        self.wx = -body_roll_cmd     # roll actuator
+        self.wy = -body_pitch_cmd    # pitch actuator
         # print("roll: " + str(roll) + " pitch: " + str(pitch))
         # print("response: roll: " + str(roll_cmd) + " pitc: " + str(pitch_cmd))
         self.angular_cmd.angular.x = self.wx
